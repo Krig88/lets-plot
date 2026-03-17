@@ -1214,6 +1214,7 @@ object Option {
             map[RASTER] = GeomKind.RASTER
             map[IMAGE] = GeomKind.IMAGE
             map[PIE] = GeomKind.PIE
+            map[GAUGE] = GeomKind.GAUGE
             map[LOLLIPOP] = GeomKind.LOLLIPOP
             map[BRACKET] = GeomKind.BRACKET
             map[BRACKET_DODGE] = GeomKind.BRACKET_DODGE
