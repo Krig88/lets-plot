@@ -511,6 +511,16 @@ object GeomMeta {
                 Aes.STROKE
             )
 
+            GeomKind.GAUGE -> listOf(
+                Aes.X,
+                Aes.Y,
+                Aes.SIZE,
+                Aes.FILL,
+                Aes.ALPHA,
+                Aes.COLOR,
+                Aes.STROKE
+            )
+
             GeomKind.LOLLIPOP -> listOf(
                 Aes.X, Aes.Y,
                 Aes.SIZE,

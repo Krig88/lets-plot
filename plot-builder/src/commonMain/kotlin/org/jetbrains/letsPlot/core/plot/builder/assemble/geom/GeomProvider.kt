@@ -417,6 +417,14 @@ class GeomProvider internal constructor(
             )
         }
 
+        fun gauge(supplier: (Context) -> Geom): GeomProvider {
+            return GeomProvider(
+                GeomKind.GAUGE,
+                GaugeGeom.HANDLES_GROUPS,
+                supplier
+            )
+        }
+
         fun lollipop(supplier: (Context) -> Geom): GeomProvider {
             return GeomProvider(
                 GeomKind.LOLLIPOP,

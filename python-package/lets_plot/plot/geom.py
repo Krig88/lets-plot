@@ -30,7 +30,7 @@ __all__ = ['geom_point', 'geom_path', 'geom_line',
            'geom_qq', 'geom_qq2', 'geom_qq_line', 'geom_qq2_line',
            'geom_freqpoly', 'geom_step', 'geom_rect',
            'geom_segment', 'geom_curve', 'geom_spoke',
-           'geom_text', 'geom_label', 'geom_text_repel', 'geom_label_repel', 'geom_pie', 'geom_lollipop',
+           'geom_text', 'geom_label', 'geom_text_repel', 'geom_label_repel', 'geom_pie', 'geom_gauge', 'geom_lollipop',
            'geom_bracket', 'geom_bracket_dodge',
            'geom_count',
            'geom_blank',
@@ -8723,6 +8723,50 @@ def geom_pie(mapping=None, *, data=None, stat=None, position=None, show_legend=N
                  start=start, direction=direction,
                  size_unit=size_unit,
                  color_by=color_by, fill_by=fill_by,
+                 **other_args)
+
+
+def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend=None, inherit_aes=None,
+               manual_key=None, sampling=None,
+               tooltips=None,
+               map=None, map_join=None, use_crs=None,
+               value=None, width=None,
+               **other_args):
+    """
+    Draw a simple gauge at x/y position.
+
+    Notes
+    -----
+    At this stage, ``geom_gauge()`` supports only explicit layer parameters
+    for gauge shape/value configuration.
+
+    Parameters
+    ----------
+    value : float in [0, 1]
+        Gauge value. Values outside range [0, 1], NaN and Inf are ignored on the rendering side.
+        Default: ``0.0``.
+    width : float
+        Gauge band thickness in pixels.
+        Default: ``2.2``.
+
+    Other defaults
+    --------------
+    ``size`` controls gauge radius and uses the geom default size (currently ``10``).
+    """
+
+    return _geom('gauge',
+                 mapping=mapping,
+                 data=data,
+                 stat=stat,
+                 position=position,
+                 show_legend=show_legend,
+                 inherit_aes=inherit_aes,
+                 manual_key=manual_key,
+                 sampling=sampling,
+                 tooltips=tooltips,
+                 map=map, map_join=map_join, use_crs=use_crs,
+                 value=value,
+                 width=width,
                  **other_args)
 
 

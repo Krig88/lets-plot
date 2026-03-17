@@ -16,6 +16,7 @@ import org.jetbrains.letsPlot.core.plot.base.stat.DotplotStat
 import org.jetbrains.letsPlot.core.plot.base.theme.ExponentFormat
 import org.jetbrains.letsPlot.core.plot.builder.assemble.PlotAssembler
 import org.jetbrains.letsPlot.core.plot.builder.assemble.geom.GeomProvider
+import org.jetbrains.letsPlot.core.spec.Option.Geom.Gauge
 import org.jetbrains.letsPlot.core.spec.Option.Geom.Pie
 import org.jetbrains.letsPlot.core.spec.Option.Geom.Spoke
 import org.jetbrains.letsPlot.core.spec.config.ArrowSpecConfig
@@ -402,6 +403,13 @@ internal object GeomProviderFactory {
                 geom.start = layerConfig.getDouble(Pie.START)
                 geom.clockwise = (layerConfig.getInteger(Pie.DIRECTION) ?: 1) == 1
                 geom
+            }
+
+            GeomKind.GAUGE -> GeomProvider.gauge {
+                GaugeGeom().apply {
+                    layerConfig.getDouble(Gauge.VALUE)?.let { value = it }
+                    layerConfig.getDouble(Gauge.WIDTH)?.let { width = it }
+                }
             }
 
             GeomKind.LOLLIPOP -> GeomProvider.lollipop {

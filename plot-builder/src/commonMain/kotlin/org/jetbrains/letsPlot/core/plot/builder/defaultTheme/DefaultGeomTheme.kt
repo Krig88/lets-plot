@@ -87,6 +87,7 @@ internal class DefaultGeomTheme private constructor(
                 GeomKind.BRACKET_DODGE -> TEXT_SIZE
 
                 GeomKind.PIE -> PIE_SIZE
+                GeomKind.GAUGE -> PIE_SIZE
 
                 GeomKind.TILE,
                 GeomKind.BIN_2D,
@@ -144,6 +145,7 @@ internal class DefaultGeomTheme private constructor(
 
                 GeomKind.BAR,
                 GeomKind.PIE,
+                GeomKind.GAUGE,
                 GeomKind.POLYGON,
                 GeomKind.CONTOURF,
                 GeomKind.DENSITY2DF,
