@@ -112,6 +112,7 @@ class GeomProto(val geomKind: GeomKind) {
             SPOKE -> DefaultSampling.SPOKE
             TEXT, LABEL, TEXT_REPEL, LABEL_REPEL -> DefaultSampling.TEXT
             PIE -> DefaultSampling.PIE
+            GAUGE -> DefaultSampling.POINT
             LOLLIPOP -> DefaultSampling.LOLLIPOP
             BRACKET -> DefaultSampling.BRACKET
             BRACKET_DODGE -> DefaultSampling.BRACKET

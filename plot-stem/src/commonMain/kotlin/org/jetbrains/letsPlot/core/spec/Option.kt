@@ -463,6 +463,11 @@ object Option {
             const val DIRECTION = "direction"
         }
 
+        object Gauge {
+            const val VALUE = "value"
+            const val WIDTH = "width"
+        }
+
         object Lollipop {
             const val FATTEN = "fatten"
             const val SLOPE = "slope"
@@ -1147,6 +1152,7 @@ object Option {
         private const val RASTER = "raster"
         const val IMAGE = "image"
         const val PIE = "pie"
+        const val GAUGE = "gauge"
         const val LOLLIPOP = "lollipop"
         const val BRACKET = "bracket"
         const val BRACKET_DODGE = "bracket_dodge"
@@ -1208,6 +1214,7 @@ object Option {
             map[RASTER] = GeomKind.RASTER
             map[IMAGE] = GeomKind.IMAGE
             map[PIE] = GeomKind.PIE
+            map[GAUGE] = GeomKind.GAUGE
             map[LOLLIPOP] = GeomKind.LOLLIPOP
             map[BRACKET] = GeomKind.BRACKET
             map[BRACKET_DODGE] = GeomKind.BRACKET_DODGE

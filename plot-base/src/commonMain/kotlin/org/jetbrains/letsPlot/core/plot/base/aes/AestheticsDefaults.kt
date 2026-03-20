@@ -166,6 +166,8 @@ class AestheticsDefaults private constructor(
 
                 GeomKind.PIE -> pie(geomTheme)
 
+                GeomKind.GAUGE -> base(geomTheme)
+
                 GeomKind.LOLLIPOP -> lollipop(geomTheme)
 
                 GeomKind.BLANK,
