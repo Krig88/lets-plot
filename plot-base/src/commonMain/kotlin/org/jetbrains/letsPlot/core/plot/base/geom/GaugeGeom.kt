@@ -12,8 +12,10 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
+import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
+import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -32,6 +34,7 @@ class GaugeGeom : GeomBase() {
         val gaugeValue = value.takeIf(::isValidValue) ?: return
         if (!isValidWidth(width)) return
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val colorMarkerMapper = HintColorUtil.createColorMarkerMapper(GeomKind.GAUGE, ctx)
 
         for (p in aesthetics.dataPoints()) {
             val (x, y) = p.finiteOrNull(Aes.X, Aes.Y) ?: continue
@@ -42,29 +45,41 @@ class GaugeGeom : GeomBase() {
             val fillAlpha = AestheticsUtil.alpha(fillColor, p)
             val borderColor = p.color()!!
             val borderWidth = AesScaling.strokeWidth(p, DataPointAesthetics::stroke)
+            val backgroundBandPoints = bandPoints(
+                center = center,
+                innerRadius = 0.0,
+                outerRadius = radius,
+                fromAngle = START_ANGLE,
+                toAngle = END_ANGLE,
+            )
 
             root.add(
                 createBand(
-                    center = center,
-                    innerRadius = 0.0,
-                    outerRadius = radius,
-                    fromAngle = START_ANGLE,
-                    toAngle = END_ANGLE,
+                    points = backgroundBandPoints,
                     fillColor = withOpacity(fillColor, (fillAlpha * BACKGROUND_ALPHA)),
                     borderColor = Color.TRANSPARENT,
                     borderWidth = 0.0
                 ).rootGroup
+            )
+            ctx.targetCollector.addPolygon(
+                points = backgroundBandPoints,
+                index = p.index(),
+                tooltipParams = GeomTargetCollector.TooltipParams(
+                    markerColors = colorMarkerMapper(p)
+                ),
             )
 
             if (gaugeValue > 0.0) {
                 val valueEndAngle = START_ANGLE - SWEEP_ANGLE * gaugeValue
                 root.add(
                     createBand(
-                        center = center,
-                        innerRadius = 0.0,
-                        outerRadius = radius,
-                        fromAngle = START_ANGLE,
-                        toAngle = valueEndAngle,
+                        points = bandPoints(
+                            center = center,
+                            innerRadius = 0.0,
+                            outerRadius = radius,
+                            fromAngle = START_ANGLE,
+                            toAngle = valueEndAngle,
+                        ),
                         fillColor = withOpacity(fillColor, fillAlpha),
                         borderColor = borderColor,
                         borderWidth = borderWidth
@@ -75,23 +90,28 @@ class GaugeGeom : GeomBase() {
     }
 
     private fun createBand(
+        points: List<DoubleVector>,
+        fillColor: Color,
+        borderColor: Color,
+        borderWidth: Double,
+    ): LinePath {
+        return LinePath.polygon(points).apply {
+            fill().set(fillColor)
+            color().set(borderColor)
+            width().set(borderWidth)
+        }
+    }
+
+    private fun bandPoints(
         center: DoubleVector,
         innerRadius: Double,
         outerRadius: Double,
         fromAngle: Double,
         toAngle: Double,
-        fillColor: Color,
-        borderColor: Color,
-        borderWidth: Double,
-    ): LinePath {
+    ): List<DoubleVector> {
         val outerArc = arcPoints(center, outerRadius, fromAngle, toAngle)
         val innerArc = arcPoints(center, innerRadius, fromAngle, toAngle).reversed()
-
-        return LinePath.polygon(outerArc + innerArc).apply {
-            fill().set(fillColor)
-            color().set(borderColor)
-            width().set(borderWidth)
-        }
+        return outerArc + innerArc
     }
 
     private fun arcPoints(
@@ -120,7 +140,7 @@ class GaugeGeom : GeomBase() {
 
         private const val DEF_VALUE = 0.0
         private const val DEF_WIDTH = 2.2
-        private const val BACKGROUND_ALPHA = 0.35
+        private const val BACKGROUND_ALPHA = 0.2
         private const val ARC_SEGMENTS = 48
         private const val START_ANGLE = PI
         private const val END_ANGLE = 0.0
