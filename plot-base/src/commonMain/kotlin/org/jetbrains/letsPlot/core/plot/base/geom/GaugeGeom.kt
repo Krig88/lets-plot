@@ -10,6 +10,7 @@ import org.jetbrains.letsPlot.commons.values.Colors.withOpacity
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
+import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
@@ -29,30 +30,29 @@ class GaugeGeom : GeomBase() {
         ctx: GeomContext,
     ) {
         val gaugeValue = value.takeIf(::isValidValue) ?: return
-        val gaugeWidth = width.takeIf(::isValidWidth) ?: return
+        if (!isValidWidth(width)) return
         val geomHelper = GeomHelper(pos, coord, ctx)
 
         for (p in aesthetics.dataPoints()) {
             val (x, y) = p.finiteOrNull(Aes.X, Aes.Y) ?: continue
             val center = geomHelper.toClient(x, y, p) ?: continue
-            val midRadius = AesScaling.pieDiameter(p) / 2.0
-            if (!midRadius.isFinite() || midRadius <= 0.0) continue
-            val alpha = (p.alpha() ?: 1.0).coerceIn(0.0, 1.0)
-            val halfWidth = gaugeWidth / 2.0
-            val innerRadius = (midRadius - halfWidth).coerceAtLeast(0.0)
-            val outerRadius = midRadius + halfWidth
-            if (!outerRadius.isFinite() || outerRadius <= 0.0) continue
-            val fillColor = p.fill() ?: p.color() ?: continue
-            val color = p.color() ?: fillColor
+            val radius = AesScaling.pieDiameter(p) / 2.0
+            if (!radius.isFinite() || radius <= 0.0) continue
+            val fillColor = p.fill()!!
+            val fillAlpha = AestheticsUtil.alpha(fillColor, p)
+            val borderColor = p.color()!!
+            val borderWidth = AesScaling.strokeWidth(p, DataPointAesthetics::stroke)
 
             root.add(
                 createBand(
                     center = center,
-                    innerRadius = innerRadius,
-                    outerRadius = outerRadius,
+                    innerRadius = 0.0,
+                    outerRadius = radius,
                     fromAngle = START_ANGLE,
                     toAngle = END_ANGLE,
-                    fillColor = withOpacity(fillColor, alpha * BACKGROUND_ALPHA)
+                    fillColor = withOpacity(fillColor, (fillAlpha * BACKGROUND_ALPHA)),
+                    borderColor = Color.TRANSPARENT,
+                    borderWidth = 0.0
                 ).rootGroup
             )
 
@@ -61,11 +61,13 @@ class GaugeGeom : GeomBase() {
                 root.add(
                     createBand(
                         center = center,
-                        innerRadius = innerRadius,
-                        outerRadius = outerRadius,
+                        innerRadius = 0.0,
+                        outerRadius = radius,
                         fromAngle = START_ANGLE,
                         toAngle = valueEndAngle,
-                        fillColor = withOpacity(color, alpha)
+                        fillColor = withOpacity(fillColor, fillAlpha),
+                        borderColor = borderColor,
+                        borderWidth = borderWidth
                     ).rootGroup
                 )
             }
@@ -79,14 +81,16 @@ class GaugeGeom : GeomBase() {
         fromAngle: Double,
         toAngle: Double,
         fillColor: Color,
+        borderColor: Color,
+        borderWidth: Double,
     ): LinePath {
         val outerArc = arcPoints(center, outerRadius, fromAngle, toAngle)
         val innerArc = arcPoints(center, innerRadius, fromAngle, toAngle).reversed()
 
         return LinePath.polygon(outerArc + innerArc).apply {
             fill().set(fillColor)
-            color().set(Color.TRANSPARENT)
-            width().set(0.0)
+            color().set(borderColor)
+            width().set(borderWidth)
         }
     }
 

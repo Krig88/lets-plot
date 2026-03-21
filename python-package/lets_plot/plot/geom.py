@@ -8746,7 +8746,8 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
         Gauge value. Values outside range [0, 1], NaN and Inf are ignored on the rendering side.
         Default: ``0.0``.
     width : float
-        Gauge band thickness in pixels.
+        Reserved for compatibility with earlier gauge rendering.
+        Must be a positive finite value.
         Default: ``2.2``.
 
     Other defaults
