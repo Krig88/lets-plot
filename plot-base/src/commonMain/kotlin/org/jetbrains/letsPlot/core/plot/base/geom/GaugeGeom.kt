@@ -16,9 +16,13 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.tan
 
 class GaugeGeom : GeomBase() {
     var value: Double = DEF_VALUE
@@ -55,7 +59,10 @@ class GaugeGeom : GeomBase() {
 
             root.add(
                 createBand(
-                    points = backgroundBandPoints,
+                    center = center,
+                    radius = radius,
+                    fromAngle = START_ANGLE,
+                    toAngle = END_ANGLE,
                     fillColor = withOpacity(fillColor, (fillAlpha * BACKGROUND_ALPHA)),
                     borderColor = Color.TRANSPARENT,
                     borderWidth = 0.0
@@ -73,13 +80,10 @@ class GaugeGeom : GeomBase() {
                 val valueEndAngle = START_ANGLE - SWEEP_ANGLE * gaugeValue
                 root.add(
                     createBand(
-                        points = bandPoints(
-                            center = center,
-                            innerRadius = 0.0,
-                            outerRadius = radius,
-                            fromAngle = START_ANGLE,
-                            toAngle = valueEndAngle,
-                        ),
+                        center = center,
+                        radius = radius,
+                        fromAngle = START_ANGLE,
+                        toAngle = valueEndAngle,
                         fillColor = withOpacity(fillColor, fillAlpha),
                         borderColor = borderColor,
                         borderWidth = borderWidth
@@ -90,16 +94,69 @@ class GaugeGeom : GeomBase() {
     }
 
     private fun createBand(
-        points: List<DoubleVector>,
+        center: DoubleVector,
+        radius: Double,
+        fromAngle: Double,
+        toAngle: Double,
         fillColor: Color,
         borderColor: Color,
         borderWidth: Double,
     ): LinePath {
-        return LinePath.polygon(points).apply {
+        val startPoint = arcPoint(center, radius, fromAngle)
+
+        val path = SvgPathDataBuilder(true).apply {
+            moveTo(center)
+            lineTo(startPoint)
+            cubicBezierArc(center, radius, fromAngle, toAngle)
+            lineTo(center)
+            closePath()
+        }
+
+        return LinePath(path).apply {
             fill().set(fillColor)
             color().set(borderColor)
             width().set(borderWidth)
         }
+    }
+
+    private fun SvgPathDataBuilder.cubicBezierArc(
+        center: DoubleVector,
+        radius: Double,
+        fromAngle: Double,
+        toAngle: Double,
+    ) {
+        val totalAngle = toAngle - fromAngle
+        if (totalAngle == 0.0) {
+            return
+        }
+
+        val segments = ceil(abs(totalAngle) / MAX_BEZIER_ARC_SEGMENT_ANGLE).toInt().coerceAtLeast(1)
+        val segmentAngle = totalAngle / segments
+
+        var startAngle = fromAngle
+        repeat(segments) {
+            val endAngle = startAngle + segmentAngle
+            val startPoint = arcPoint(center, radius, startAngle)
+            val endPoint = arcPoint(center, radius, endAngle)
+
+            val k = 4.0 / 3.0 * tan((endAngle - startAngle) / 4.0)
+            val startTangent = arcTangent(startAngle)
+            val endTangent = arcTangent(endAngle)
+
+            val controlStart = startPoint.add(startTangent.mul(radius * k))
+            val controlEnd = endPoint.subtract(endTangent.mul(radius * k))
+
+            curveTo(controlStart = controlStart, controlEnd = controlEnd, to = endPoint)
+            startAngle = endAngle
+        }
+    }
+
+    private fun arcPoint(center: DoubleVector, radius: Double, angle: Double): DoubleVector {
+        return center.add(DoubleVector(radius * cos(angle), -radius * sin(angle)))
+    }
+
+    private fun arcTangent(angle: Double): DoubleVector {
+        return DoubleVector(-sin(angle), -cos(angle))
     }
 
     private fun bandPoints(
@@ -142,6 +199,7 @@ class GaugeGeom : GeomBase() {
         private const val DEF_WIDTH = 2.2
         private const val BACKGROUND_ALPHA = 0.2
         private const val ARC_SEGMENTS = 48
+        private const val MAX_BEZIER_ARC_SEGMENT_ANGLE = PI / 2
         private const val START_ANGLE = PI
         private const val END_ANGLE = 0.0
         private const val SWEEP_ANGLE = PI
