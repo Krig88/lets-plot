@@ -181,6 +181,7 @@ object GeomInteractionUtil {
             }
 
             GeomKind.PIE,
+            GeomKind.GAUGE,
             GeomKind.BOX_PLOT,
             GeomKind.CROSS_BAR,
             GeomKind.Y_DOT_PLOT,
