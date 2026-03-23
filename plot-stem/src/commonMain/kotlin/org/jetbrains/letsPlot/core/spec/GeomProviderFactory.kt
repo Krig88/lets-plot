@@ -408,7 +408,7 @@ internal object GeomProviderFactory {
             GeomKind.GAUGE -> GeomProvider.gauge {
                 GaugeGeom().apply {
                     layerConfig.getDouble(Gauge.VALUE)?.let { value = it }
-                    layerConfig.getDouble(Gauge.WIDTH)?.let { width = it }
+                    layerConfig.getDouble(Gauge.HOLE)?.let { hole = it }
                 }
             }
 

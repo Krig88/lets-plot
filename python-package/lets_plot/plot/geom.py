@@ -8730,28 +8730,88 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                manual_key=None, sampling=None,
                tooltips=None,
                map=None, map_join=None, use_crs=None,
-               value=None, width=None,
+               value=None, hole=None,
                **other_args):
     """
-    Draw a simple gauge at x/y position.
-
-    Notes
-    -----
-    At this stage, ``geom_gauge()`` supports only explicit layer parameters
-    for gauge shape/value configuration.
+    Draw a semicircle gauge at x/y position.
 
     Parameters
     ----------
-    value : float in [0, 1]
-        Gauge value. Values outside range [0, 1], NaN and Inf are ignored on the rendering side.
-        Default: ``0.0``.
-    width : float
-        Gauge band thickness in pixels.
-        Default: ``2.2``.
+    mapping : ``FeatureSpec``
+        Set of aesthetic mappings created by `aes() <https://lets-plot.org/python/pages/api/lets_plot.aes.html>`__ function.
+        Aesthetic mappings describe the way that variables in the data are
+        mapped to plot "aesthetics".
+    data : dict or Pandas or Polars ``DataFrame``
+        The data to be displayed in this layer. If None, the default, the data
+        is inherited from the plot data as specified in the call to ggplot.
+    stat : str, default='identity'
+        The statistical transformation to use on the data for this layer, as a string.
+        Supported transformations: 'identity' (leaves the data unchanged),
+    position : str or ``FeatureSpec``, default='identity'
+        Position adjustment.
+        Either a position adjustment name: 'dodge', 'jitter', 'nudge', 'jitterdodge', 'fill',
+        'stack' or 'identity', or the result of calling a position adjustment function (e.g., `position_dodge() <https://lets-plot.org/python/pages/api/lets_plot.position_dodge.html>`__ etc.).
+    show_legend : bool, default=True
+        False - do not show legend for this layer.
+    inherit_aes : bool, default=True
+        False - do not combine the layer aesthetic mappings with the plot shared mappings.
+    manual_key : str or ``layer_key``
+        The key to show in the manual legend.
+        Specify text for the legend label or advanced settings using the `layer_key() <https://lets-plot.org/python/pages/api/lets_plot.layer_key.html>`__ function.
+    sampling : ``FeatureSpec``
+        Result of the call to the ``sampling_xxx()`` function.
+        To prevent any sampling for this layer pass value "none" (string "none").
+    tooltips : ``layer_tooltips``
+        Result of the call to the `layer_tooltips() <https://lets-plot.org/python/pages/api/lets_plot.layer_tooltips.html>`__ function.
+        Specify appearance, style and content.
+        Set tooltips='none' to hide tooltips from the layer.
+    value : float in [0, 1], default=0.0
+        Gauge value shown by the foreground arc.
+        Values outside range [0, 1], NaN and Inf are ignored on the rendering side.
+    hole : float in [0, 1), default=0.0
+        Inner radius ratio of the gauge.
+        ``0`` draws a solid semicircle, values close to ``1`` draw a thin ring.
+    other_args
+        Other arguments passed on to the layer.
+        These are often aesthetics settings used to set an aesthetic to a fixed value,
+        like color='red', fill='blue', size=3 or shape=21.
+        They may also be parameters to the paired geom/stat.
 
-    Other defaults
-    --------------
-    ``size`` controls gauge radius and uses the geom default size (currently ``10``).
+    Returns
+    -------
+    ``LayerSpec``
+        Geom object specification.
+
+    Notes
+    -----
+    ``geom_gauge()`` is intended for KPI-like semicircular indicators.
+
+    - ``value`` and ``hole`` are currently layer parameters (not mapped aesthetics),
+      so use separate layers to draw gauges with different values and/or hole sizes.
+    - ``size`` controls gauge diameter (outer radius is ``size / 2``).
+
+    ``geom_gauge()`` understands the following aesthetics mappings:
+
+    - x : x-axis value.
+    - y : y-axis value.
+    - size : gauge diameter.
+    - fill : fill color. For more info see `Color and Fill <https://lets-plot.org/python/pages/aesthetics.html#color-and-fill>`__.
+    - alpha : transparency level of the gauge. Accept values between 0 and 1.
+    - color : color of the gauge border.
+    - stroke : gauge border width.
+
+    Examples
+    --------
+    Draw a simple gauge:
+
+    .. jupyter-execute::
+
+        from lets_plot import *
+        LetsPlot.setup_html()
+
+        ggplot({'x': [0], 'y': [0]}) + \\
+            geom_gauge(aes('x', 'y'), value=0.72, hole=0.45, size=28, fill='#2E7D32', color='#1B5E20') + \\
+            coord_fixed()
     """
 
     return _geom('gauge',
@@ -8766,7 +8826,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                  tooltips=tooltips,
                  map=map, map_join=map_join, use_crs=use_crs,
                  value=value,
-                 width=width,
+                 hole=hole,
                  **other_args)
 
 

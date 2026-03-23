@@ -465,7 +465,7 @@ object Option {
 
         object Gauge {
             const val VALUE = "value"
-            const val WIDTH = "width"
+            const val HOLE = "hole"
         }
 
         object Lollipop {
