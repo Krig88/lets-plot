@@ -8730,7 +8730,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                manual_key=None, sampling=None,
                tooltips=None,
                map=None, map_join=None, use_crs=None,
-               value=None, width=None,
+               value=None, hole=None,
                **other_args):
     """
     Draw a simple gauge at x/y position.
@@ -8767,7 +8767,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                  tooltips=tooltips,
                  map=map, map_join=map_join, use_crs=use_crs,
                  value=value,
-                 width=width,
+                 hole=hole,
                  **other_args)
 
 

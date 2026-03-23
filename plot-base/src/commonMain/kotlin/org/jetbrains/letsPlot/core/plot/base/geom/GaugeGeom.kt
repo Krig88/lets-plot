@@ -26,7 +26,7 @@ import kotlin.math.tan
 
 class GaugeGeom : GeomBase() {
     var value: Double = DEF_VALUE
-    var width: Double = DEF_WIDTH
+    var hole: Double = DEF_HOLE
 
     override fun buildIntern(
         root: SvgRoot,
@@ -36,7 +36,7 @@ class GaugeGeom : GeomBase() {
         ctx: GeomContext,
     ) {
         val gaugeValue = value.takeIf(::isValidValue) ?: return
-        if (!isValidWidth(width)) return
+        if (!isValidHole(hole)) return
         val geomHelper = GeomHelper(pos, coord, ctx)
         val colorMarkerMapper = HintColorUtil.createColorMarkerMapper(GeomKind.GAUGE, ctx)
 
@@ -45,13 +45,14 @@ class GaugeGeom : GeomBase() {
             val center = geomHelper.toClient(x, y, p) ?: continue
             val radius = AesScaling.pieDiameter(p) / 2.0
             if (!radius.isFinite() || radius <= 0.0) continue
+            val holeRadius = radius * hole
             val fillColor = p.fill()!!
             val fillAlpha = AestheticsUtil.alpha(fillColor, p)
             val borderColor = p.color()!!
             val borderWidth = AesScaling.strokeWidth(p, DataPointAesthetics::stroke)
             val backgroundBandPoints = bandPoints(
                 center = center,
-                innerRadius = 0.0,
+                innerRadius = holeRadius,
                 outerRadius = radius,
                 fromAngle = START_ANGLE,
                 toAngle = END_ANGLE,
@@ -60,6 +61,7 @@ class GaugeGeom : GeomBase() {
             root.add(
                 createBand(
                     center = center,
+                    innerRadius = holeRadius,
                     radius = radius,
                     fromAngle = START_ANGLE,
                     toAngle = END_ANGLE,
@@ -81,6 +83,7 @@ class GaugeGeom : GeomBase() {
                 root.add(
                     createBand(
                         center = center,
+                        innerRadius = holeRadius,
                         radius = radius,
                         fromAngle = START_ANGLE,
                         toAngle = valueEndAngle,
@@ -95,6 +98,7 @@ class GaugeGeom : GeomBase() {
 
     private fun createBand(
         center: DoubleVector,
+        innerRadius: Double,
         radius: Double,
         fromAngle: Double,
         toAngle: Double,
@@ -102,13 +106,18 @@ class GaugeGeom : GeomBase() {
         borderColor: Color,
         borderWidth: Double,
     ): LinePath {
-        val startPoint = arcPoint(center, radius, fromAngle)
+        val outerStart = arcPoint(center, radius, fromAngle)
 
         val path = SvgPathDataBuilder(true).apply {
-            moveTo(center)
-            lineTo(startPoint)
+            moveTo(outerStart)
             cubicBezierArc(center, radius, fromAngle, toAngle)
-            lineTo(center)
+            if (innerRadius > 0.0) {
+                val innerEnd = arcPoint(center, innerRadius, toAngle)
+                lineTo(innerEnd)
+                cubicBezierArc(center, innerRadius, toAngle, fromAngle)
+            } else {
+                lineTo(center)
+            }
             closePath()
         }
 
@@ -188,15 +197,15 @@ class GaugeGeom : GeomBase() {
         return value.isFinite() && value in 0.0..1.0
     }
 
-    private fun isValidWidth(width: Double): Boolean {
-        return width.isFinite() && width > 0.0
+    private fun isValidHole(hole: Double): Boolean {
+        return hole.isFinite() && hole >= 0.0 && hole < 1.0
     }
 
     companion object {
         const val HANDLES_GROUPS = false
 
         private const val DEF_VALUE = 0.0
-        private const val DEF_WIDTH = 2.2
+        private const val DEF_HOLE = 0.0
         private const val BACKGROUND_ALPHA = 0.2
         private const val ARC_SEGMENTS = 48
         private const val MAX_BEZIER_ARC_SEGMENT_ANGLE = PI / 2
