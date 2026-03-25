@@ -53,6 +53,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_END
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_START
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.UPPER
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VALUE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VIOLINWIDTH
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.WEIGHT
@@ -143,6 +144,7 @@ internal class TypedOptionConverterMap(colorConverter: ColorOptionConverter) {
         this.put(RADIUS, DOUBLE_CVT)
         this.put(SLICE, DOUBLE_CVT)
         this.put(EXPLODE, DOUBLE_CVT)
+        this.put(VALUE, DOUBLE_CVT)
 
         this.put(ISTART, DOUBLE_CVT)
         this.put(IEND, DOUBLE_CVT)

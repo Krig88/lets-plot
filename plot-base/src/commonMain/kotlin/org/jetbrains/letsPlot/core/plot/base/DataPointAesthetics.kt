@@ -217,6 +217,10 @@ abstract class DataPointAesthetics {
         return get(Aes.EXPLODE)
     }
 
+    fun value(): Double? {
+        return get(Aes.VALUE)
+    }
+
     fun istart(): Double? {
         return get(Aes.ISTART)
     }

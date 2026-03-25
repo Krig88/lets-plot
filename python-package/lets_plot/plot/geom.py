@@ -8730,7 +8730,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                manual_key=None, sampling=None,
                tooltips=None,
                map=None, map_join=None, use_crs=None,
-               value=None, hole=None,
+               hole=None,
                **other_args):
     """
     Draw a semicircle gauge at x/y position.
@@ -8765,9 +8765,6 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
         Result of the call to the `layer_tooltips() <https://lets-plot.org/python/pages/api/lets_plot.layer_tooltips.html>`__ function.
         Specify appearance, style and content.
         Set tooltips='none' to hide tooltips from the layer.
-    value : float in [0, 1], default=0.0
-        Gauge value shown by the foreground arc.
-        Values outside range [0, 1], NaN and Inf are ignored on the rendering side.
     hole : float in [0, 1), default=0.0
         Inner radius ratio of the gauge.
         ``0`` draws a solid semicircle, values close to ``1`` draw a thin ring.
@@ -8786,14 +8783,15 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
     -----
     ``geom_gauge()`` is intended for KPI-like semicircular indicators.
 
-    - ``value`` and ``hole`` are currently layer parameters (not mapped aesthetics),
-      so use separate layers to draw gauges with different values and/or hole sizes.
+    - ``value`` is a regular aesthetic: map it in ``aes()`` or set a constant via ``value=...``.
+    - ``hole`` remains a layer parameter.
     - ``size`` controls gauge diameter (outer radius is ``size / 2``).
 
     ``geom_gauge()`` understands the following aesthetics mappings:
 
     - x : x-axis value.
     - y : y-axis value.
+    - value : gauge value shown by the foreground arc (expected in [0, 1]).
     - size : gauge diameter.
     - fill : fill color. For more info see `Color and Fill <https://lets-plot.org/python/pages/aesthetics.html#color-and-fill>`__.
     - alpha : transparency level of the gauge. Accept values between 0 and 1.
@@ -8810,7 +8808,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
         LetsPlot.setup_html()
 
         ggplot({'x': [0], 'y': [0]}) + \\
-            geom_gauge(aes('x', 'y'), value=0.72, hole=0.45, size=28, fill='#2E7D32', color='#1B5E20') + \\
+            geom_gauge(aes('x', 'y', value=0.72), hole=0.45, size=28, fill='#2E7D32', color='#1B5E20') + \\
             coord_fixed()
     """
 
@@ -8825,7 +8823,6 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                  sampling=sampling,
                  tooltips=tooltips,
                  map=map, map_join=map_join, use_crs=use_crs,
-                 value=value,
                  hole=hole,
                  **other_args)
 

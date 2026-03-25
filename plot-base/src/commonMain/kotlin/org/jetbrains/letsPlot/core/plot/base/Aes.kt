@@ -131,6 +131,9 @@ class Aes<T> private constructor(val name: String, val isNumeric: Boolean = true
         // pie geom - to explode sector from center point, detaching it from the main pie
         val EXPLODE: Aes<Double> =
             Aes("explode")
+        // gauge geom - defines filled fraction of arc
+        val VALUE: Aes<Double> =
+            Aes("value")
 
         val ISTART: Aes<Double> = Aes("istart")
         val IEND: Aes<Double> = Aes("iend")
@@ -253,6 +256,7 @@ class Aes<T> private constructor(val name: String, val isNumeric: Boolean = true
                     aes == LINEHEIGHT ||
                     aes == SLICE ||
                     aes == EXPLODE ||
+                    aes == VALUE ||
                     aes == ISTART ||
                     aes == IEND ||
                     aes == SIZE_START ||

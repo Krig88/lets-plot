@@ -45,6 +45,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.SPEED
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_END
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_START
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VALUE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VIOLINWIDTH
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.WEIGHT
@@ -218,6 +219,10 @@ class AestheticsBuilder @JvmOverloads constructor(private var myDataPointCount: 
 
     fun explode(v: (Int) -> Double?): AestheticsBuilder {
         return aes(EXPLODE, v)
+    }
+
+    fun value(v: (Int) -> Double?): AestheticsBuilder {
+        return aes(VALUE, v)
     }
 
     fun istart(v: (Int) -> Double?): AestheticsBuilder {

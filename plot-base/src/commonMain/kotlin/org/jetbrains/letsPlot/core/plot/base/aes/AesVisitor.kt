@@ -53,6 +53,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_END
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_START
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.UPPER
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VALUE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VIOLINWIDTH
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.WEIGHT
@@ -248,6 +249,9 @@ abstract class AesVisitor<T> {
         if (aes == EXPLODE) {
             return explode()
         }
+        if (aes == VALUE) {
+            return value()
+        }
         if (aes == ISTART) {
             return istart()
         }
@@ -394,6 +398,8 @@ abstract class AesVisitor<T> {
     protected abstract fun slice(): T
 
     protected abstract fun explode(): T
+
+    protected abstract fun value(): T
 
     protected abstract fun istart(): T
 

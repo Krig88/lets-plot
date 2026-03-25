@@ -63,6 +63,7 @@ object TransformVar {
     val RADIUS = DataFrame.Variable("transform.RADIUS", TRANSFORM)
     val SLICE = DataFrame.Variable("transform.SLICE", TRANSFORM)
     val EXPLODE = DataFrame.Variable("transform.EXPLODE", TRANSFORM)
+    val VALUE = DataFrame.Variable("transform.VALUE", TRANSFORM)
     val ISTART = DataFrame.Variable("transform.ISTART", TRANSFORM)
     val IEND = DataFrame.Variable("transform.IEND", TRANSFORM)
     val SIZE_START = DataFrame.Variable("transform.SIZE_START", TRANSFORM)
@@ -317,6 +318,10 @@ object TransformVar {
 
         override fun explode(): DataFrame.Variable {
             return EXPLODE
+        }
+
+        override fun value(): DataFrame.Variable {
+            return VALUE
         }
 
         override fun istart(): DataFrame.Variable {
