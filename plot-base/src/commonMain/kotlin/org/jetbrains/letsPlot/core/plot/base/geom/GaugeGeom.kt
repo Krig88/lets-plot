@@ -25,7 +25,6 @@ import kotlin.math.sin
 import kotlin.math.tan
 
 class GaugeGeom : GeomBase() {
-    var value: Double = DEF_VALUE
     var hole: Double = DEF_HOLE
 
     override fun buildIntern(
@@ -35,13 +34,14 @@ class GaugeGeom : GeomBase() {
         coord: CoordinateSystem,
         ctx: GeomContext,
     ) {
-        val gaugeValue = value.takeIf(::isValidValue) ?: return
         if (!isValidHole(hole)) return
         val geomHelper = GeomHelper(pos, coord, ctx)
         val colorMarkerMapper = HintColorUtil.createColorMarkerMapper(GeomKind.GAUGE, ctx)
 
         for (p in aesthetics.dataPoints()) {
             val (x, y) = p.finiteOrNull(Aes.X, Aes.Y) ?: continue
+            val gaugeValue = p.value() ?: continue
+            if (!isValidValue(gaugeValue)) continue
             val center = geomHelper.toClient(x, y, p) ?: continue
             val radius = AesScaling.pieDiameter(p) / 2.0
             if (!radius.isFinite() || radius <= 0.0) continue
@@ -204,7 +204,6 @@ class GaugeGeom : GeomBase() {
     companion object {
         const val HANDLES_GROUPS = false
 
-        private const val DEF_VALUE = 0.0
         private const val DEF_HOLE = 0.0
         private const val BACKGROUND_ALPHA = 0.2
         private const val ARC_SEGMENTS = 48

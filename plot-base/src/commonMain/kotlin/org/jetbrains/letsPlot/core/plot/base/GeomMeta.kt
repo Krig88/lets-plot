@@ -514,6 +514,7 @@ object GeomMeta {
             GeomKind.GAUGE -> listOf(
                 Aes.X,
                 Aes.Y,
+                Aes.VALUE,
                 Aes.SIZE,
                 Aes.FILL,
                 Aes.ALPHA,

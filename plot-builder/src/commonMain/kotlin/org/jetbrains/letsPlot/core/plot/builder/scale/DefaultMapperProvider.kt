@@ -54,6 +54,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_END
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_START
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.UPPER
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VALUE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VIOLINWIDTH
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.WEIGHT
@@ -176,6 +177,7 @@ object DefaultMapperProvider {
 
             this.put(SLICE, NUMERIC_IDENTITY)
             this.put(EXPLODE, NUMERIC_IDENTITY)
+            this.put(VALUE, NUMERIC_IDENTITY)
 
             this.put(ISTART, NUMERIC_IDENTITY)
             this.put(IEND, NUMERIC_IDENTITY)

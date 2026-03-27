@@ -57,6 +57,7 @@ import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_END
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.STROKE_START
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.UPPER
+import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VALUE
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VIOLINWIDTH
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.VJUST
 import org.jetbrains.letsPlot.core.plot.base.Aes.Companion.WEIGHT
@@ -135,6 +136,7 @@ object DefaultNaValue {
         VALUE_MAP.put(RADIUS, 0.0)
         VALUE_MAP.put(SLICE, 0.0)
         VALUE_MAP.put(EXPLODE, 0.0)
+        VALUE_MAP.put(VALUE, 0.0)
         VALUE_MAP.put(ISTART, 0.0)
         VALUE_MAP.put(IEND, 0.0)
         VALUE_MAP.put(SIZE_START, 0.0)
