@@ -6,8 +6,6 @@
 package org.jetbrains.letsPlot.core.plot.base.geom
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
 import org.jetbrains.letsPlot.commons.values.Colors.withOpacity
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
@@ -33,7 +31,7 @@ class GaugeGeom : GeomBase() {
         ctx: GeomContext,
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
-        val colorMarkerMapper = HintColorUtil.createColorMarkerMapper(GeomKind.GAUGE, ctx)
+        val colorsByDataPoint = HintColorUtil.createColorMarkerMapper(GeomKind.GAUGE, ctx)
 
         for (p in aesthetics.dataPoints()) {
             val (x, y) = p.finiteOrNull(Aes.X, Aes.Y) ?: continue
@@ -52,7 +50,6 @@ class GaugeGeom : GeomBase() {
             val fillAlpha = AestheticsUtil.alpha(fillColor, p)
             val borderColor = p.color()!!
             val borderWidth = AesScaling.strokeWidth(p, DataPointAesthetics::stroke) * GAUGE_STROKE_SCALE
-            val backgroundBandPoints = bandPoints(backgroundBand)
 
             root.add(
                 buildSvgBand(
@@ -62,11 +59,12 @@ class GaugeGeom : GeomBase() {
                     borderWidth = 0.0
                 ).rootGroup
             )
-            ctx.targetCollector.addPolygon(
-                points = backgroundBandPoints,
+            ctx.targetCollector.addPoint(
                 index = p.index(),
+                point = center,
+                radius = radius,
                 tooltipParams = GeomTargetCollector.TooltipParams(
-                    markerColors = colorMarkerMapper(p)
+                    markerColors = colorsByDataPoint(p)
                 ),
             )
 
@@ -143,37 +141,6 @@ class GaugeGeom : GeomBase() {
             sweep = !band.outerSweep,
             to = band.innerArcStart
         )
-    }
-
-    private fun bandPoints(band: GaugeBand): List<DoubleVector> {
-        val outerArc = arcPoints(band.center, band.outerRadius, band.fromAngle, band.toAngle)
-        val innerArc = if (band.innerRadius > 0.0) {
-            arcPoints(band.center, band.innerRadius, band.fromAngle, band.toAngle).reversed()
-        } else {
-            listOf(band.center)
-        }
-        return outerArc + innerArc
-    }
-
-    private fun arcPoints(
-        center: DoubleVector,
-        radius: Double,
-        fromAngle: Double,
-        toAngle: Double,
-    ): List<DoubleVector> {
-        val startPoint = center.add(DoubleVector(radius, 0.0).rotate(-fromAngle))
-        val endPoint = center.add(DoubleVector(radius, 0.0).rotate(-toAngle))
-        val segmentLength = startPoint.subtract(endPoint).length()
-
-        return resample(startPoint, endPoint, AdaptiveResampler.PIXEL_PRECISION) { point: DoubleVector ->
-            val ratio = point.subtract(startPoint).length() / segmentLength
-            if (ratio.isFinite()) {
-                val angle = fromAngle + (toAngle - fromAngle) * ratio
-                center.add(DoubleVector(radius, 0.0).rotate(-angle))
-            } else {
-                point
-            }
-        }
     }
 
     private data class GaugeBand(

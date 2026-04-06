@@ -181,7 +181,6 @@ object GeomInteractionUtil {
             }
 
             GeomKind.PIE,
-            GeomKind.GAUGE,
             GeomKind.BOX_PLOT,
             GeomKind.CROSS_BAR,
             GeomKind.Y_DOT_PLOT,
@@ -208,7 +207,8 @@ object GeomInteractionUtil {
             GeomKind.SINA,
             GeomKind.LOLLIPOP,
             GeomKind.SPOKE,
-            GeomKind.CURVE -> return GeomTooltipSetup.bivariateFunction(GeomTooltipSetup.NON_AREA_GEOM)
+            GeomKind.CURVE,
+            GeomKind.GAUGE -> return GeomTooltipSetup.bivariateFunction(GeomTooltipSetup.NON_AREA_GEOM)
 
             GeomKind.Q_Q_LINE,
             GeomKind.Q_Q_2_LINE,
