@@ -22,6 +22,7 @@ import kotlin.math.abs
 
 class GaugeGeom : GeomBase() {
     var hole: Double = DEF_HOLE
+    var sizeUnit: String? = null
 
     override fun buildIntern(
         root: SvgRoot,
@@ -36,8 +37,10 @@ class GaugeGeom : GeomBase() {
         for (p in aesthetics.dataPoints()) {
             val (x, y) = p.finiteOrNull(Aes.X, Aes.Y) ?: continue
             val gaugeValue = p.value() ?: continue
+            val point = DoubleVector(x, y)
             val center = geomHelper.toClient(x, y, p) ?: continue
-            val radius = AesScaling.pieDiameter(p) / 2.0
+            val sizeUnitRatio = AesScaling.sizeUnitRatio(point, coord, sizeUnit, AesScaling.PIE_UNIT_SIZE)
+            val radius = sizeUnitRatio * AesScaling.pieDiameter(p) / 2.0
             val holeRadius = radius * hole
             val backgroundBand = GaugeBand(
                 center = center,

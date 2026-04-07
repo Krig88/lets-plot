@@ -8731,6 +8731,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                tooltips=None,
                map=None, map_join=None, use_crs=None,
                hole=None,
+               size_unit=None,
                **other_args):
     """
     Draw a semicircle gauge at x/y position.
@@ -8768,6 +8769,12 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
     hole : float in [0, 1), default=0.0
         Inner radius ratio of the gauge.
         ``0`` draws a solid semicircle, values close to ``1`` draw a thin ring.
+    size_unit : {'x', 'y', 'min', 'max'}
+        Relate the size of the gauge to the length of the unit step along one of the axes.
+        'x' uses the unit step along the x-axis, 'y' uses the unit step along the y-axis.
+        'min' uses the smaller of the unit steps along the x- and y-axes.
+        'max' uses the larger of the unit steps along the x- and y-axes.
+        If None, no fitting is performed.
     other_args
         Other arguments passed on to the layer.
         These are often aesthetics settings used to set an aesthetic to a fixed value,
@@ -8785,6 +8792,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
 
     - ``value`` is a regular aesthetic: map it in ``aes()`` or set a constant via ``value=...``.
     - ``hole`` remains a layer parameter.
+    - ``size_unit`` can adapt gauge size to x/y data step.
     - ``size`` controls gauge diameter (outer radius is ``size / 2``).
 
     ``geom_gauge()`` understands the following aesthetics mappings:
@@ -8824,6 +8832,7 @@ def geom_gauge(mapping=None, *, data=None, stat=None, position=None, show_legend
                  tooltips=tooltips,
                  map=map, map_join=map_join, use_crs=use_crs,
                  hole=hole,
+                 size_unit=size_unit,
                  **other_args)
 
 
