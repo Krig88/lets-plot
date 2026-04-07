@@ -100,6 +100,12 @@ class PieSpecComponent : EcsComponent {
     var clockwise: Boolean = true
 }
 
+class GaugeSpecComponent : EcsComponent {
+    var radius: Double = 0.0
+    var holeSize: Double = 0.0
+    var value: Double = 0.0
+}
+
 class SearchResultComponent : EcsComponent {
     var hoverObjects: List<HoverObject> = emptyList()
     var zoom : Int? = null

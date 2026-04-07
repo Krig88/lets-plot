@@ -53,6 +53,7 @@ object LayerConverter {
                 TEXT, LABEL, TEXT_REPEL, LABEL_REPEL -> MapLayerKind.TEXT to dataPointsConverter.toText(layer.geom)
                 DENSITY2DF, CONTOURF, POLYGON, MAP -> MapLayerKind.POLYGON to dataPointsConverter.toPolygon()
                 PIE -> MapLayerKind.PIE to dataPointsConverter.toPie(layer.geom as PieGeom)
+                GAUGE -> MapLayerKind.GAUGE to dataPointsConverter.toGauge(layer.geom as GaugeGeom)
                 HEX -> MapLayerKind.POLYGON to dataPointsConverter.toHex()
                 else -> throw IllegalArgumentException("Layer '" + layer.geomKind.name + "' is not supported on Live Map.")
             }
@@ -247,6 +248,24 @@ object LayerConverter {
                         spacerWidth = it.spacerWidth
                         startAngle = it.startAngle
                         clockwise = it.clockwise
+                    }
+                }
+            }
+
+            MapLayerKind.GAUGE -> gauges {
+                liveMapDataPoints.forEach {
+                    gauge {
+                        this.sizeScalingRange = sizeScalingRange
+                        this.alphaScalingEnabled = alphaScalingEnabled
+                        layerIndex = layerIdx
+                        index = it.index
+                        point = it.point
+                        radius = it.radius
+                        holeSize = it.holeRatio
+                        value = it.gaugeValue
+                        fillColor = it.fillColor
+                        strokeColor = it.strokeColor
+                        strokeWidth = it.strokeWidth
                     }
                 }
             }

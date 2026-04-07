@@ -26,6 +26,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.util.TextUtil
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text.HorizontalAnchor.*
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Text.VerticalAnchor.*
 import org.jetbrains.letsPlot.core.plot.builder.scale.DefaultNaValue
+import org.jetbrains.letsPlot.core.plot.livemap.DataPointsConverter.GaugeOptions
 import org.jetbrains.letsPlot.core.plot.livemap.DataPointsConverter.MultiDataPointHelper.MultiDataPoint
 import org.jetbrains.letsPlot.core.plot.livemap.DataPointsConverter.PieOptions
 import org.jetbrains.letsPlot.core.plot.livemap.MapLayerKind.*
@@ -178,7 +179,7 @@ internal class DataPointLiveMapAesthetics {
 
     val strokeColor
         get() = when (myLayerKind) {
-            POLYGON, PIE -> myP.color()!!
+            POLYGON, PIE, GAUGE -> myP.color()!!
             else -> colorWithAlpha(myP.color()!!)
         }
 
@@ -187,7 +188,7 @@ internal class DataPointLiveMapAesthetics {
     val radius: Double
         get() = when (myLayerKind) {
             POINT -> pointRadius(myP.shape()!!.size(myP))
-            PIE -> AestheticsUtil.pieDiameter(myP) / 2.0
+            PIE, GAUGE -> AestheticsUtil.pieDiameter(myP) / 2.0
             else -> 0.0
         }
 
@@ -197,6 +198,7 @@ internal class DataPointLiveMapAesthetics {
             POINT -> AestheticsUtil.pointStrokeWidth(myP)
             TEXT -> 0.0
             PIE -> myP.stroke() ?: 0.0
+            GAUGE -> (myP.stroke() ?: 0.0) * GAUGE_STROKE_SCALE
         }
 
     val fillArray: List<Color>
@@ -223,8 +225,13 @@ internal class DataPointLiveMapAesthetics {
         get() = myLabelOptions?.alphaStroke ?: false
 
     private var myPieOptions: PieOptions? = null
+    private var myGaugeOptions: GaugeOptions? = null
+
+    val gaugeValue: Double
+        get() = myGaugeOptions?.value ?: 0.0
+
     val holeRatio: Double
-        get() = myPieOptions?.holeSize ?: 0.0
+        get() = myGaugeOptions?.holeSize ?: myPieOptions?.holeSize ?: 0.0
     val spacerColor: Color
         get() = myPieOptions?.spacerColor ?: Color.WHITE
     val spacerWidth: Double
@@ -270,8 +277,17 @@ internal class DataPointLiveMapAesthetics {
         return this
     }
 
+    fun setGaugeOptions(gaugeOptions: GaugeOptions?): DataPointLiveMapAesthetics {
+        myGaugeOptions = gaugeOptions
+        return this
+    }
+
     // Limit Lon Lat to -180, 180; -90, 90
     private fun trimLonLat(p: Vec<LonLat>): Vec<LonLat> {
         return Vec(normalizeLon(p.x), limitLat(p.y))
+    }
+
+    companion object {
+        private const val GAUGE_STROKE_SCALE = 0.3
     }
 }

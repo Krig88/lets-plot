@@ -46,6 +46,7 @@ internal class MapObjectMatcher {
     fun match(mapEntity: DataPointLiveMapAesthetics) {
         when (mapEntity.myLayerKind) {
             PIE -> matchPieSector(mapEntity)
+            GAUGE -> matchGauge(mapEntity)
             // HEATMAP -> matchHeatmap(mapObject)
             V_LINE, H_LINE -> matchLine(mapEntity)
             PATH -> matchPath(mapEntity)
@@ -53,6 +54,15 @@ internal class MapObjectMatcher {
             POLYGON -> matchPolygon(mapEntity)
             TEXT -> matchText(mapEntity)
         }
+    }
+
+    private fun matchGauge(gauge: DataPointLiveMapAesthetics) {
+        index.assertExpectation(gauge.index)
+        fillColor.assertExpectation(gauge.fillColor)
+        strokeColor.assertExpectation(gauge.strokeColor)
+        strokeWidth.assertExpectation(gauge.strokeWidth)
+        radius.assertExpectation(gauge.radius)
+        point.assertExpectation(gauge.point)
     }
 
     private fun matchPieSector(pieSector: DataPointLiveMapAesthetics) {
