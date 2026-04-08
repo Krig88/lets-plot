@@ -51,6 +51,11 @@ internal class DataPointsConverter(
         val clockwise: Boolean
     )
 
+    data class GaugeOptions(
+        val value: Double,
+        val holeSize: Double,
+    )
+
     private fun pieConverter(geom: PieGeom): List<DataPointLiveMapAesthetics> {
         val pieOptions = PieOptions(
             spacerColor = geom.spacerColor,
@@ -71,6 +76,24 @@ internal class DataPointsConverter(
             }
     }
 
+    private fun gaugeConverter(geom: GaugeGeom): List<DataPointLiveMapAesthetics> {
+        return aesthetics.dataPoints().mapNotNull { p ->
+            val (x, y) = p.finiteOrNull(Aes.X, Aes.Y) ?: return@mapNotNull null
+            val gaugeValue = p.value()?.takeIf(SeriesUtil::isFinite) ?: return@mapNotNull null
+            DataPointLiveMapAesthetics(p, MapLayerKind.GAUGE).apply {
+                point = explicitVec(x, y)
+                setGaugeOptions(
+                    GaugeOptions(
+                        value = gaugeValue,
+                        holeSize = geom.hole,
+                    )
+                )
+            }
+        }
+    }
+
+
+
     fun toPoint(geom: PointGeom) = pointFeatureConverter.point(geom)
     fun toHorizontalLine() = pointFeatureConverter.hLine()
     fun toVerticalLine() = pointFeatureConverter.vLine()
@@ -81,6 +104,7 @@ internal class DataPointsConverter(
     fun toPolygon() = myMultiPathFeatureConverter.polygon()
     fun toText(geom: Geom) = pointFeatureConverter.text(geom)
     fun toPie(geom: PieGeom) = pieConverter(geom)
+    fun toGauge(geom: GaugeGeom) = gaugeConverter(geom)
     fun toCurve(geom: CurveGeom) = mySinglePathFeatureConverter.curve(geom)
     fun toSpoke(geom: SpokeGeom) = mySinglePathFeatureConverter.spoke(geom)
     fun toHex() = mySinglePathFeatureConverter.hex()

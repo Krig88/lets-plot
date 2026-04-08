@@ -408,6 +408,7 @@ internal object GeomProviderFactory {
             GeomKind.GAUGE -> GeomProvider.gauge {
                 GaugeGeom().apply {
                     layerConfig.getDouble(Gauge.HOLE)?.let { hole = it }
+                    sizeUnit = layerConfig.getString(Gauge.SIZE_UNIT)?.lowercase()
                 }
             }
 
