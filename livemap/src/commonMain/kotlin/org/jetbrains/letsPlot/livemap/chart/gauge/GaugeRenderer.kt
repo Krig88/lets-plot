@@ -106,12 +106,10 @@ class GaugeRenderer : Renderer {
             return
         }
 
-        ctx.ellipse(
+        ctx.arc(
             x = 0.0,
             y = 0.0,
-            radiusX = band.outerRadius,
-            radiusY = band.outerRadius,
-            rotation = 0.0,
+            radius = band.outerRadius,
             startAngle = -band.fromAngle,
             endAngle = -band.toAngle,
             anticlockwise = !band.outerSweep,
@@ -123,12 +121,10 @@ class GaugeRenderer : Renderer {
             return
         }
 
-        ctx.ellipse(
+        ctx.arc(
             x = 0.0,
             y = 0.0,
-            radiusX = band.innerRadius,
-            radiusY = band.innerRadius,
-            rotation = 0.0,
+            radius = band.innerRadius,
             startAngle = -band.toAngle,
             endAngle = -band.fromAngle,
             anticlockwise = band.outerSweep,
