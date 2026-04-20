@@ -6,6 +6,7 @@
 package org.jetbrains.letsPlot.core.plot.base.render.point.symbol
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimShape
 
@@ -82,11 +83,13 @@ internal class TriangleGlyph @JvmOverloads constructor(
             val ox = location.x - base / 2
             val oy = location.y - half
 
-            val pathData = GlyphUtil.buildPathData(
-                x.map { it + ox },
-                y.map { it + oy }
-            )
-            return SvgSlimElements.path(pathData)
+            val xs = x.map { it + ox }
+            val ys = y.map { it + oy }
+            val styledPathData = PrimitiveStyles.compiledStyle.stylePath(
+                points = xs.zip(ys) { px, py -> DoubleVector(px, py) },
+                closePath = true
+            ).primitive
+            return SvgSlimElements.path(styledPathData)
         }
     }
 }

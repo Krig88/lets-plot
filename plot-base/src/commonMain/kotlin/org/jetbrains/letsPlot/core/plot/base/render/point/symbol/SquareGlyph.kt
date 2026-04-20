@@ -5,17 +5,21 @@
 
 package org.jetbrains.letsPlot.core.plot.base.render.point.symbol
 
+import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
-import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimShape
 
 internal class SquareGlyph(location: DoubleVector, size: Double) : SingletonGlyph(location, size) {
 
     override fun createShape(location: DoubleVector, width: Double): SvgSlimShape {
-        return SvgSlimElements.rect(
+        return PrimitiveStyles.compiledStyle.styleSlimRect(
+            DoubleRectangle(
                 location.x - width / 2,
                 location.y - width / 2,
                 width,
-                width)
+                width
+            )
+        ).primitive
     }
 }

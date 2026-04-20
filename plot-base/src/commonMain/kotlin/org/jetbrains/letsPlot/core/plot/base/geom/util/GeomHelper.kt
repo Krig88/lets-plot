@@ -22,6 +22,7 @@ import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit
 import org.jetbrains.letsPlot.core.plot.base.geom.DimensionUnit.*
 import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec.Companion.toArrowAes
 import org.jetbrains.letsPlot.core.plot.base.geom.util.ArrowSpec.Type.CLOSED
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.datamodel.svg.dom.*
@@ -236,30 +237,21 @@ open class GeomHelper(
             if (lineString.isEmpty() || lineString.size == 1) return null
 
             val lineStringAfterPadding = padLineString(lineString, p, padArrow = true)
+            val styledLineString = PrimitiveStyles.compiledStyle
+                .styleLineString(lineStringAfterPadding, closePath = false)
+                .primitive
 
-            val lineElement = if (lineStringAfterPadding.size == 2) {
-                // Simple SvgLineElement is enough for a straight line without arrow
-                SvgLineElement().apply {
-                    x1().set(lineStringAfterPadding.first().x)
-                    y1().set(lineStringAfterPadding.first().y)
-                    x2().set(lineStringAfterPadding.last().x)
-                    y2().set(lineStringAfterPadding.last().y)
-                }
+            val pathData = if (myInterpolation != null) {
+                SvgPathDataBuilder()
+                    .moveTo(styledLineString.first())
+                    .interpolatePoints(styledLineString, myInterpolation!!)
+                    .build()
             } else {
-                SvgPathElement().apply {
-                    d().set(
-                        if (myInterpolation != null) {
-                            SvgPathDataBuilder()
-                                .moveTo(lineStringAfterPadding.first())
-                                .interpolatePoints(lineStringAfterPadding, myInterpolation!!)
-                                .build()
-                        } else {
-                            SvgPathDataBuilder().lineString(lineStringAfterPadding).build()
-                        }
-                    )
-                }
+                SvgPathDataBuilder().lineString(styledLineString).build()
             }
+            val lineElement = SvgPathElement(pathData)
             decorate(lineElement, p, myStrokeAlphaEnabled, strokeScaler, filled)
+            val lineNode = lineElement as SvgNode
 
             val arrowElements = myArrowSpec?.let { arrowSpec ->
                 val (startHead, endHead) = ArrowSupport.createArrowHeads(
@@ -289,10 +281,10 @@ open class GeomHelper(
             }
 
             return if (arrowElements.isEmpty() && debugPoints.isEmpty()) {
-                lineElement
+                lineNode
             } else {
                 SvgGElement().apply {
-                    children().add(lineElement)
+                    children().add(lineNode)
                     children().addAll(arrowElements)
                     children().addAll(debugPoints)
                 }
@@ -306,14 +298,17 @@ open class GeomHelper(
         ): SvgNode? {
             if (points.size < 2) return null
             val arrowSpec = myArrowSpec ?: return null
+            val styledArrowLine = PrimitiveStyles.compiledStyle
+                .styleLineString(points, closePath = false)
+                .primitive
 
-            val arrowSvg = SvgPathElement().apply {
+            val arrowPathData = SvgPathDataBuilder()
+                .lineString(styledArrowLine)
+                .also { if (arrowSpec.type == CLOSED) it.closePath() }
+                .build()
+
+            val arrowSvg = SvgPathElement(arrowPathData).apply {
                 strokeMiterLimit().set(ArrowSupport.miterLength(arrowSpec.angle, AesScaling.strokeWidth(p)) * 2)
-                d().set(SvgPathDataBuilder()
-                    .lineString(points)
-                    .also { if (arrowSpec.type == CLOSED) it.closePath() }
-                    .build()
-                )
             }
 
             decorate(

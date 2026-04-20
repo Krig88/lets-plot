@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.observable.property.WritableProperty
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgColors
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
@@ -126,9 +127,12 @@ class LinePath(builder: SvgPathDataBuilder) : SvgComponent() {
             val interpolate = false
             for (point in points) {
                 if (point === END_OF_SUBPATH) {
+                    val styledSegment = PrimitiveStyles.compiledStyle
+                        .styleLineString(curSegment, closePath = isPolygon)
+                        .primitive
                     buildSegment(
                         builder,
-                        curSegment,
+                        styledSegment,
                         interpolate
                     )
                     if (isPolygon) {
@@ -139,9 +143,12 @@ class LinePath(builder: SvgPathDataBuilder) : SvgComponent() {
                     curSegment.add(point!!)
                 }
             }
+            val styledSegment = PrimitiveStyles.compiledStyle
+                .styleLineString(curSegment, closePath = isPolygon)
+                .primitive
             buildSegment(
                 builder,
-                curSegment,
+                styledSegment,
                 interpolate
             )
             if (isPolygon) {

@@ -5,16 +5,17 @@
 
 package org.jetbrains.letsPlot.core.plot.base.render.point
 
+import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.core.plot.base.Aes
 import org.jetbrains.letsPlot.core.plot.base.DataPointAesthetics
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.render.point.NamedShape.*
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import org.jetbrains.letsPlot.core.plot.base.render.point.symbol.CircleGlyph
 import org.jetbrains.letsPlot.core.plot.base.render.point.symbol.Glyph
 import org.jetbrains.letsPlot.core.plot.base.render.point.symbol.Glyphs
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgTransformBuilder
-import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimObject
 
 object PointShapeSvg {
@@ -40,7 +41,9 @@ object PointShapeSvg {
     }
 
     private fun createTinyDotShape(location: DoubleVector, p: DataPointAesthetics): SvgSlimObject {
-        val r = SvgSlimElements.rect(location.x - 0.5, location.y - 0.5, 1.0, 1.0)
+        val r = PrimitiveStyles.compiledStyle
+            .styleSlimRect(DoubleRectangle(location.x - 0.5, location.y - 0.5, 1.0, 1.0))
+            .primitive
         val color = p.color()!!
         val alpha = AestheticsUtil.alpha(color, p)
         r.setFill(color, alpha)

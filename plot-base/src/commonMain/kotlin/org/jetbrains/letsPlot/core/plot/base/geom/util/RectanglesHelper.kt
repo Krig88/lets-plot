@@ -11,11 +11,10 @@ import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveRe
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
-import org.jetbrains.letsPlot.datamodel.svg.dom.SvgRectElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
 import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimGroup
 
@@ -41,8 +40,10 @@ class RectanglesHelper(
                     )
                 ) { toClient(it, p) }
 
-                val svgPoly = SvgPathElement()
-                svgPoly.d().set(SvgPathDataBuilder().lineString(polyRect).build())
+                val pathData = PrimitiveStyles.compiledStyle
+                    .stylePath(polyRect, closePath = false)
+                    .primitive
+                val svgPoly = SvgPathElement(pathData)
 
                 decorate(svgPoly, p)
                 handler(p, svgPoly, polyRect)
@@ -54,7 +55,8 @@ class RectanglesHelper(
         myAesthetics.dataPoints().forEach { p ->
             geometryFactory(p)?.let { rect ->
                 val clientRect = toClient(rect, p) ?: return@let
-                val svgRect = SvgRectElement(clientRect)
+                val pathData = PrimitiveStyles.compiledStyle.styleRect(clientRect).primitive
+                val svgRect = SvgPathElement(pathData)
                 decorate(svgRect, p)
                 handler(p, svgRect, clientRect)
             }
@@ -68,7 +70,8 @@ class RectanglesHelper(
             val p = myAesthetics.dataPointAt(index)
             val clientRect = geometryFactory(p) ?: continue
 
-            val svgRect = SvgRectElement(clientRect)
+            val pathData = PrimitiveStyles.compiledStyle.styleRect(clientRect).primitive
+            val svgRect = SvgPathElement(pathData)
             decorate(svgRect, p)
 
             result.add(svgRect)
@@ -129,7 +132,10 @@ class RectanglesHelper(
 
                     onGeometry(p, null, simplified)
 
-                    val slimShape = SvgSlimElements.path(SvgPathDataBuilder().lineString(simplified).build())
+                    val slimPathData = PrimitiveStyles.compiledStyle
+                        .stylePath(simplified, closePath = false)
+                        .primitive
+                    val slimShape = SvgSlimElements.path(slimPathData)
                     decorateSlimShape(slimShape, p)
                     slimShape.appendTo(group)
                 } else {
@@ -137,7 +143,7 @@ class RectanglesHelper(
 
                     onGeometry(p, clientRect, null)
 
-                    val slimShape = SvgSlimElements.rect(clientRect.left, clientRect.top, clientRect.width, clientRect.height)
+                    val slimShape = PrimitiveStyles.compiledStyle.styleSlimRect(clientRect).primitive
                     decorateSlimShape(slimShape, p)
                     slimShape.appendTo(group)
                 }

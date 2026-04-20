@@ -6,7 +6,7 @@
 package org.jetbrains.letsPlot.core.plot.base.render.point.symbol
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
-import org.jetbrains.letsPlot.datamodel.svg.dom.slim.SvgSlimElements
+import org.jetbrains.letsPlot.core.plot.base.render.style.PrimitiveStyles
 import kotlin.jvm.JvmOverloads
 import kotlin.math.PI
 import kotlin.math.cos
@@ -22,16 +22,18 @@ internal class CrossGlyph @JvmOverloads constructor(location: DoubleVector, size
             size
         val half = w / 2 // half width of inner square
 
-        val backSlashLine = SvgSlimElements.line(
-                cx - half,
-                cy - half,
-                cx + half,
-                cy + half)
-        val slashLine = SvgSlimElements.line(
-                cx - half,
-                cy + half,
-                cx + half,
-                cy - half)
+        val backSlashLine = PrimitiveStyles.compiledStyle
+            .styleSlimLine(
+                start = DoubleVector(cx - half, cy - half),
+                end = DoubleVector(cx + half, cy + half)
+            )
+            .primitive
+        val slashLine = PrimitiveStyles.compiledStyle
+            .styleSlimLine(
+                start = DoubleVector(cx - half, cy + half),
+                end = DoubleVector(cx + half, cy - half)
+            )
+            .primitive
 
         setShapes(backSlashLine, slashLine)
     }
