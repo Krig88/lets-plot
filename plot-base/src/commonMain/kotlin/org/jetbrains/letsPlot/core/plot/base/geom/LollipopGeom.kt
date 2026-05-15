@@ -18,9 +18,14 @@ import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.point.NamedShape
 import org.jetbrains.letsPlot.core.plot.base.render.point.PointShapeSvg
+import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -155,7 +160,7 @@ class LollipopGeom : GeomBase(), WithWidth, WithHeight {
             return wrap(o)
         }
 
-        fun createStick(helper: GeomHelper): SvgLineElement? {
+        fun createStick(helper: GeomHelper): SvgNode? {
             val clientBase = helper.toClient(base, point) ?: return null // base of the lollipop stick
             val clientHead = helper.toClient(head, point) ?: return null // center of the lollipop candy
             val stickLength = sqrt((clientHead.x - clientBase.x).pow(2) + (clientHead.y - clientBase.y).pow(2))
@@ -163,7 +168,11 @@ class LollipopGeom : GeomBase(), WithWidth, WithHeight {
                 return null
             }
             val neck = shiftHeadToBase(clientBase, clientHead, candyRadius) // meeting point of candy and stick
-            val line = SvgLineElement(clientBase.x, clientBase.y, neck.x, neck.y)
+
+            val styledPoints = XkcdStyler.stylize(listOf(clientBase, neck))
+            val line = SvgPathElement().apply {
+                d().set(SvgPathDataBuilder().lineString(styledPoints).build())
+            }
             GeomHelper.decorate(line, point, applyAlphaToAll = true, strokeScaler = AesScaling::lineWidth)
 
             return line
