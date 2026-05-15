@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.splitBy
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.*
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.PIXEL_PRECISION
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.intern.util.VectorAdapter
 import org.jetbrains.letsPlot.commons.values.Colors.withOpacity
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier.Companion.DOUGLAS_PEUCKER_PIXEL_THRESHOLD
@@ -112,9 +113,11 @@ open class LinesHelper(
             .mapNotNull { PolygonData.create(it) }
 
         val clientPolygonData = domainPolygonData.mapNotNull { polygon ->
-            polygon.rings
+            val rings = polygon.rings
                 .map { if (myResamplingEnabled) resample(it) else toClient(it) }
-                .let { PolygonData.create(it) }
+                .map(::stylizePathPoints)
+
+            PolygonData.create(rings)
         }
 
         val svg = clientPolygonData.map { polygon ->
@@ -168,6 +171,16 @@ open class LinesHelper(
         }
 
         return smoothed
+    }
+
+    private fun stylizePathPoints(points: List<PathPoint>): List<PathPoint> {
+        val styledCoords = XkcdStyler.stylize(points.map(PathPoint::coord))
+        val lastAes = points.last().aes
+
+        return styledCoords.mapIndexed { index, coord ->
+            val aes = points.getOrNull(index)?.aes ?: lastAes
+            PathPoint(aes, coord)
+        }
     }
 
     private fun toClient(linestring: List<PathPoint>): List<PathPoint> {
@@ -264,7 +277,7 @@ open class LinesHelper(
     }
 
     fun toClientPaths(domainPathData: List<PathData>): List<PathData> {
-        return when (myResamplingEnabled) {
+        val clientPaths = when (myResamplingEnabled) {
             true -> {
                 domainPathData
                     .map { path -> splitByStyle(path).let(::midPointsPathInterpolator) }
@@ -285,6 +298,26 @@ open class LinesHelper(
                     .map { splitByStyle(it).let(::midPointsPathInterpolator) }
                     .flatten()
             }
+        }
+
+        return clientPaths.mapNotNull { pathData ->
+            val styledCoords = XkcdStyler.stylize(pathData.coordinates)
+            val styledPoints = pathData.points.zip(styledCoords) { point, coord ->
+                PathPoint(point.aes, coord)
+            }
+            val allStyledPoints = if (styledCoords.size > pathData.points.size) {
+                val lastAes = pathData.points.last().aes
+                styledCoords.mapIndexed { index, coord ->
+                    if (index < pathData.points.size) {
+                        PathPoint(pathData.points[index].aes, coord)
+                    } else {
+                        PathPoint(lastAes, coord)
+                    }
+                }
+            } else {
+                styledPoints
+            }
+            PathData.create(allStyledPoints)
         }
     }
 
