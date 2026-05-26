@@ -174,13 +174,9 @@ open class LinesHelper(
     }
 
     private fun stylizePathPoints(points: List<PathPoint>): List<PathPoint> {
-        val styledCoords = XkcdStyler.stylize(points.map(PathPoint::coord))
-        val lastAes = points.last().aes
-
-        return styledCoords.mapIndexed { index, coord ->
-            val aes = points.getOrNull(index)?.aes ?: lastAes
-            PathPoint(aes, coord)
-        }
+        val styledCoords: List<DoubleVector> = XkcdStyler.stylize(points.map(PathPoint::coord))
+        val pathAes = points.first().aes
+        return styledCoords.map { coord: DoubleVector -> PathPoint(pathAes, coord) }
     }
 
     private fun toClient(linestring: List<PathPoint>): List<PathPoint> {
@@ -300,24 +296,10 @@ open class LinesHelper(
             }
         }
 
-        return clientPaths.mapNotNull { pathData ->
-            val styledCoords = XkcdStyler.stylize(pathData.coordinates)
-            val styledPoints = pathData.points.zip(styledCoords) { point, coord ->
-                PathPoint(point.aes, coord)
-            }
-            val allStyledPoints = if (styledCoords.size > pathData.points.size) {
-                val lastAes = pathData.points.last().aes
-                styledCoords.mapIndexed { index, coord ->
-                    if (index < pathData.points.size) {
-                        PathPoint(pathData.points[index].aes, coord)
-                    } else {
-                        PathPoint(lastAes, coord)
-                    }
-                }
-            } else {
-                styledPoints
-            }
-            PathData.create(allStyledPoints)
+        return clientPaths.mapNotNull { pathData: PathData ->
+            val styledCoords: List<DoubleVector> = XkcdStyler.stylize(pathData.coordinates)
+            val styledPoints = styledCoords.map { coord: DoubleVector -> PathPoint(pathData.aes, coord) }
+            PathData.create(styledPoints)
         }
     }
 
