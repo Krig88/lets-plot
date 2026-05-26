@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.splitBy
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.*
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.PIXEL_PRECISION
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.intern.util.VectorAdapter
 import org.jetbrains.letsPlot.commons.values.Colors.withOpacity
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier.Companion.DOUGLAS_PEUCKER_PIXEL_THRESHOLD
@@ -112,9 +113,11 @@ open class LinesHelper(
             .mapNotNull { PolygonData.create(it) }
 
         val clientPolygonData = domainPolygonData.mapNotNull { polygon ->
-            polygon.rings
+            val rings = polygon.rings
                 .map { if (myResamplingEnabled) resample(it) else toClient(it) }
-                .let { PolygonData.create(it) }
+                .map(::stylizePathPoints)
+
+            PolygonData.create(rings)
         }
 
         val svg = clientPolygonData.map { polygon ->
@@ -168,6 +171,12 @@ open class LinesHelper(
         }
 
         return smoothed
+    }
+
+    private fun stylizePathPoints(points: List<PathPoint>): List<PathPoint> {
+        val styledCoords: List<DoubleVector> = XkcdStyler.stylize(points.map(PathPoint::coord))
+        val pathAes = points.first().aes
+        return styledCoords.map { coord: DoubleVector -> PathPoint(pathAes, coord) }
     }
 
     private fun toClient(linestring: List<PathPoint>): List<PathPoint> {
@@ -264,7 +273,7 @@ open class LinesHelper(
     }
 
     fun toClientPaths(domainPathData: List<PathData>): List<PathData> {
-        return when (myResamplingEnabled) {
+        val clientPaths = when (myResamplingEnabled) {
             true -> {
                 domainPathData
                     .map { path -> splitByStyle(path).let(::midPointsPathInterpolator) }
@@ -285,6 +294,12 @@ open class LinesHelper(
                     .map { splitByStyle(it).let(::midPointsPathInterpolator) }
                     .flatten()
             }
+        }
+
+        return clientPaths.mapNotNull { pathData: PathData ->
+            val styledCoords: List<DoubleVector> = XkcdStyler.stylize(pathData.coordinates)
+            val styledPoints = styledCoords.map { coord: DoubleVector -> PathPoint(pathData.aes, coord) }
+            PathData.create(styledPoints)
         }
     }
 

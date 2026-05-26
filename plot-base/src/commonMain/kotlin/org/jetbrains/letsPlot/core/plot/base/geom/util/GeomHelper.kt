@@ -10,6 +10,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleSegment
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.intern.util.ArrowSupport
 import org.jetbrains.letsPlot.commons.intern.util.curve
 import org.jetbrains.letsPlot.commons.intern.util.padLineString
@@ -158,9 +159,19 @@ open class GeomHelper(
             @Suppress("NAME_SHADOWING")
             val end = toClient(end, p) ?: return null
 
-            val lineString = curve(start, end, curvature, angle, ncp)
+            val lineString = XkcdStyler.stylize(
+                curve(start, end, curvature, angle, ncp),
+                amplitude = XkcdStyler.DEFAULT_WOBBLE_AMPLITUDE * 1.8,
+                segmentLength = XkcdStyler.DEFAULT_SEGMENT_LENGTH * 0.65
+            )
 
-            val svgElement = renderSvgElement(p, lineString, strokeScaler, filled = false) ?: return null
+            val svgElement = renderSvgElement(
+                p,
+                lineString,
+                strokeScaler,
+                filled = false,
+                useInterpolation = false
+            ) ?: return null
             val geometry = takeGeometry(lineString, p)
 
             return svgElement to geometry
@@ -214,11 +225,12 @@ open class GeomHelper(
             points: List<DoubleVector>,
             aes: DataPointAesthetics,
         ): List<DoubleVector>? {
-            if (myResamplingEnabled) {
-                return resample(points, myResamplingPrecision) { toClient(it, aes) }
+            val clientPoints = if (myResamplingEnabled) {
+                resample(points, myResamplingPrecision) { toClient(it, aes) }
             } else {
-                return points.map { toClient(it, aes) ?: return null }
+                points.map { toClient(it, aes) ?: return null }
             }
+            return XkcdStyler.stylize(clientPoints)
         }
 
         private fun takeGeometry(lineString: List<DoubleVector>, p: DataPointAesthetics): List<DoubleVector> {
@@ -229,7 +241,8 @@ open class GeomHelper(
             p: DataPointAesthetics,
             lineString: List<DoubleVector>,
             strokeScaler: (DataPointAesthetics) -> Double,
-            filled: Boolean
+            filled: Boolean,
+            useInterpolation: Boolean = true
         ): SvgNode? {
             if (myNoSvg) return SvgGElement()
 
@@ -248,7 +261,7 @@ open class GeomHelper(
             } else {
                 SvgPathElement().apply {
                     d().set(
-                        if (myInterpolation != null) {
+                        if (useInterpolation && myInterpolation != null) {
                             SvgPathDataBuilder()
                                 .moveTo(lineStringAfterPadding.first())
                                 .interpolatePoints(lineStringAfterPadding, myInterpolation!!)
