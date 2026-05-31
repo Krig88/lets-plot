@@ -42,11 +42,9 @@ object XkcdStyler {
         val dy = p2.y - p1.y
         val length = distance(p1.x, p1.y, p2.x, p2.y)
 
-        if (length < segmentLength) {
-            return listOf(p1, p2)
-        }
+        if (length < 1e-6) return listOf(p1, p2)
 
-        val numSegments = (length / segmentLength).toInt()
+        val numSegments = maxOf(2, (length / segmentLength).toInt())
         val result = mutableListOf<DoubleVector>()
         result.add(p1)
 

@@ -16,6 +16,7 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.PieAnnotation
+import org.jetbrains.letsPlot.core.plot.base.geom.util.ArcHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
@@ -83,42 +84,31 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
             }
     }
 
-    private fun SvgPathDataBuilder.svgOuterArc(sector: Sector) {
-        return with(sector) {
-            ellipticalArc(
-                rx = radius,
-                ry = radius,
-                xAxisRotation = 0.0,
-                largeArc = angle > PI,
-                sweep = true,
-                to = outerArcEnd
-            )
-        }
-    }
-
-    private fun SvgPathDataBuilder.svgInnerArc(sector: Sector) {
-        return with(sector) {
-            ellipticalArc(
-                rx = holeRadius,
-                ry = holeRadius,
-                xAxisRotation = 0.0,
-                largeArc = angle > PI,
-                sweep = false,
-                to = innerArcStart
-            )
-        }
-    }
-
     private fun buildSvgSector(sector: Sector): LinePath {
-        return LinePath(
-            SvgPathDataBuilder().apply {
-                moveTo(sector.innerArcStart)
-                lineTo(sector.outerArcStart)
-                svgOuterArc(sector)
-                lineTo(sector.innerArcEnd)
-                svgInnerArc(sector)
-            }
-        ).apply {
+        val startRadial = ArcHelper.stylizedLine(listOf(sector.innerArcStart, sector.outerArcStart))
+
+        val outerArc = ArcHelper.stylizedArc(
+            sector.position, sector.radius,
+            sector.startAngle, sector.effectiveEndAngle
+        )
+
+        val endRadial = ArcHelper.stylizedLine(listOf(sector.outerArcEnd, sector.innerArcEnd))
+        val innerArc = if (sector.holeRadius > 0) {
+            ArcHelper.stylizedArc(
+                sector.position, sector.holeRadius,
+                sector.effectiveEndAngle, sector.startAngle
+            )
+        } else {
+            listOf(sector.position)
+        }
+
+        val contour = mutableListOf<DoubleVector>()
+        contour.addAll(startRadial)
+        contour.addAll(outerArc.drop(1))
+        contour.addAll(endRadial.drop(1))
+        contour.addAll(innerArc.drop(1))
+
+        return LinePath.polygon(contour).apply {
             val fill = sector.p.fill()!!
             val fillAlpha = AestheticsUtil.alpha(fill, sector.p)
             fill().set(Colors.withOpacity(fill, fillAlpha))
@@ -126,18 +116,27 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
     }
 
     private fun buildSvgArcs(sector: Sector): LinePath {
-        return LinePath(
-            SvgPathDataBuilder().apply {
-                if (strokeSide.hasOuter) {
-                    moveTo(sector.outerArcStart)
-                    svgOuterArc(sector)
-                }
-                if (strokeSide.hasInner) {
-                    moveTo(sector.innerArcEnd)
-                    svgInnerArc(sector)
-                }
-            }
-        ).apply {
+        val builder = SvgPathDataBuilder()
+
+        if (strokeSide.hasOuter) {
+            val outerPoints = ArcHelper.stylizedArc(
+                sector.position, sector.radius,
+                sector.startAngle, sector.effectiveEndAngle
+            )
+            builder.moveTo(outerPoints.first())
+            outerPoints.forEach { builder.lineTo(it) }
+        }
+
+        if (strokeSide.hasInner && sector.holeRadius > 0) {
+            val innerPoints = ArcHelper.stylizedArc(
+                sector.position, sector.holeRadius,
+                sector.startAngle, sector.effectiveEndAngle
+            )
+            builder.moveTo(innerPoints.first())
+            innerPoints.forEach { builder.lineTo(it) }
+        }
+
+        return LinePath(builder).apply {
             width().set(sector.strokeWidth)
             color().set(sector.p.color())
         }
@@ -148,12 +147,18 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
             return LinePath(
                 SvgPathDataBuilder().apply {
                     if (atStart) {
-                        moveTo(sector.innerStrokeStartPoint)
-                        lineTo(sector.outerStrokeStartPoint)
+                        val line = ArcHelper.stylizedLine(
+                            listOf(sector.innerStrokeStartPoint, sector.outerStrokeStartPoint)
+                        )
+                        moveTo(line.first())
+                        line.forEach { lineTo(it) }
                     }
                     if (atEnd) {
-                        moveTo(sector.innerStrokeEndPoint)
-                        lineTo(sector.outerStrokeEndPoint)
+                        val line = ArcHelper.stylizedLine(
+                            listOf(sector.innerStrokeEndPoint, sector.outerStrokeEndPoint)
+                        )
+                        moveTo(line.first())
+                        line.forEach { lineTo(it) }
                     }
                 }
             ).apply {
@@ -278,7 +283,8 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
         val direction = startAngle + angle / 2
         private val explode = p.explode()?.let { radius * it } ?: 0.0
         val position = pieCenter.add(DoubleVector(explode * cos(direction), explode * sin(direction)))
-        private val fullCircleDrawingFix = if (angle % (2 * PI) == 0.0) 0.0001 else 0.0
+        val fullCircleDrawingFix = if (angle % (2 * PI) == 0.0) 0.0001 else 0.0
+        val effectiveEndAngle = endAngle - fullCircleDrawingFix
 
         val outerArcStart = arcPoint(radius, startAngle)
         val outerArcEnd = arcPoint(radius, endAngle - fullCircleDrawingFix)
