@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.layout.Thickness
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
@@ -99,16 +100,13 @@ class GridComponent constructor(
         color: Color,
         lineType: LineType
     ): SvgNode {
-        val shapeElem: SvgShape = when {
-            lineString.size == 2 -> SvgLineElement(lineString[0].x, lineString[0].y, lineString[1].x, lineString[1].y)
-            lineString.size > 2 -> SvgPathElement(SvgPathDataBuilder().lineString(lineString).build())
-            else -> SvgPathElement()
-        }
+        val styled =  XkcdStyler.stylize(lineString)
+        val shapeElem = SvgPathElement(SvgPathDataBuilder().lineString(styled).build())
 
         shapeElem.strokeColor().set(color)
         shapeElem.strokeWidth().set(width)
         StrokeDashArraySupport.apply(shapeElem, width, lineType)
         shapeElem.fill().set(SvgColors.NONE)
-        return shapeElem as SvgNode
+        return shapeElem
     }
 }
