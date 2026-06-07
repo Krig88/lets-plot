@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.math.toDegrees
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
@@ -62,7 +63,7 @@ class PolarAxisComponent(
                 val axisLine = SvgPathElement().apply {
                     d().set(
                         SvgPathDataBuilder()
-                            .lineString(breaksData.axisLine)
+                            .lineString(XkcdStyler.stylize(breaksData.axisLine))
                             .build()
                     )
                     strokeWidth().set(axisTheme.lineWidth())
@@ -72,11 +73,15 @@ class PolarAxisComponent(
                 }
                 rootElement.children().add(axisLine)
             } else {
-                val axisLine = SvgLineElement().apply {
-//                    y1().set(breaksData.center.y)
-//                    y2().set(breaksData.center.y - length / 2.0)
-                    y1().set(breaksData.axisLine[0].y)
-                    y2().set(breaksData.axisLine[1].y)
+                val styled = XkcdStyler.stylize(
+                    listOf(
+                        DoubleVector(0.0, breaksData.axisLine[0].y),
+                        DoubleVector(0.0, breaksData.axisLine[1].y)
+                    )
+                )
+                val axisLine = SvgPathElement().apply {
+                    d().set(SvgPathDataBuilder().lineString(styled).build())
+                    fillColor().set(Color.TRANSPARENT)
                     strokeWidth().set(axisTheme.lineWidth())
                     strokeColor().set(axisTheme.lineColor())
                     StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
@@ -92,36 +97,39 @@ class PolarAxisComponent(
         axisTheme: AxisTheme,
         breakCoord: DoubleVector,
         center: DoubleVector
-    ): Pair<Label?, SvgLineElement?> {
+    ): Pair<Label?, SvgNode?> {
 
-        val tickMark: SvgLineElement? = if (axisTheme.showTickMarks()) {
-            val tickMark = SvgLineElement()
-            tickMark.strokeWidth().set(axisTheme.tickMarkWidth())
-            tickMark.strokeColor().set(axisTheme.tickMarkColor())
-            StrokeDashArraySupport.apply(tickMark, axisTheme.tickMarkWidth(), axisTheme.tickMarkLineType())
+        val tickMark: SvgNode? = if (axisTheme.showTickMarks()) {
             val markLength = axisTheme.tickMarkLength()
-
-            when (orientation) {
-                Orientation.LEFT -> {
-                    tickMark.x2().set(-markLength)
-                    tickMark.y2().set(0.0)
-
-                    SvgUtils.transformTranslate(tickMark, 0.0, breakCoord.y)
-                }
+            val tickPoints: List<DoubleVector> = when (orientation) {
+                Orientation.LEFT -> listOf(
+                    DoubleVector(0.0, breakCoord.y),
+                    DoubleVector(-markLength, breakCoord.y)
+                )
 
                 Orientation.BOTTOM -> {
                     val tickMarkVector = breakCoord.mul(1 + markLength / breakCoord.length())
-                    tickMark.x2().set(tickMarkVector.add(center).x)
-                    tickMark.y2().set(tickMarkVector.add(center).y)
-
-                    tickMark.x1().set(breakCoord.add(center).x)
-                    tickMark.y1().set(breakCoord.add(center).y)
+                    listOf(
+                        breakCoord.add(center),
+                        tickMarkVector.add(center)
+                    )
                 }
 
                 Orientation.RIGHT -> error("Unsupported orientation $orientation")
                 Orientation.TOP -> error("Unsupported orientation $orientation")
             }
-            tickMark
+            val styled = XkcdStyler.stylize(
+                tickPoints,
+                amplitude = 0.6,
+                segmentLength = 2.0
+            )
+            SvgPathElement().apply {
+                d().set(SvgPathDataBuilder().lineString(styled).build())
+                fillColor().set(Color.TRANSPARENT)
+                strokeWidth().set(axisTheme.tickMarkWidth())
+                strokeColor().set(axisTheme.tickMarkColor())
+                StrokeDashArraySupport.apply(this, axisTheme.tickMarkWidth(), axisTheme.tickMarkLineType())
+            }
         } else {
             null
         }
