@@ -124,7 +124,7 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
                 sector.startAngle, sector.effectiveEndAngle
             )
             builder.moveTo(outerPoints.first())
-            outerPoints.forEach { builder.lineTo(it) }
+            outerPoints.drop(1).forEach { builder.lineTo(it) }
         }
 
         if (strokeSide.hasInner && sector.holeRadius > 0) {
@@ -133,7 +133,7 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
                 sector.startAngle, sector.effectiveEndAngle
             )
             builder.moveTo(innerPoints.first())
-            innerPoints.forEach { builder.lineTo(it) }
+            innerPoints.drop(1).forEach { builder.lineTo(it) }
         }
 
         return LinePath(builder).apply {
@@ -151,14 +151,14 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
                             listOf(sector.innerStrokeStartPoint, sector.outerStrokeStartPoint)
                         )
                         moveTo(line.first())
-                        line.forEach { lineTo(it) }
+                        line.drop(1).forEach { lineTo(it) }
                     }
                     if (atEnd) {
                         val line = stylizedLine(
                             listOf(sector.innerStrokeEndPoint, sector.outerStrokeEndPoint)
                         )
                         moveTo(line.first())
-                        line.forEach { lineTo(it) }
+                        line.drop(1).forEach { lineTo(it) }
                     }
                 }
             ).apply {
