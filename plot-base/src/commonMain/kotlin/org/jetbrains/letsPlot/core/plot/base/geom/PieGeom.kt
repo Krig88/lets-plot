@@ -9,6 +9,7 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.math.toRadians
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.interval.DoubleSpan
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.commons.values.Colors
@@ -16,7 +17,6 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.PieAnnotation
-import org.jetbrains.letsPlot.core.plot.base.geom.util.ArcHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
@@ -85,16 +85,16 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
     }
 
     private fun buildSvgSector(sector: Sector): LinePath {
-        val startRadial = ArcHelper.stylizedLine(listOf(sector.innerArcStart, sector.outerArcStart))
+        val startRadial = stylizedLine(listOf(sector.innerArcStart, sector.outerArcStart))
 
-        val outerArc = ArcHelper.stylizedArc(
+        val outerArc = stylizedArc(
             sector.position, sector.radius,
             sector.startAngle, sector.effectiveEndAngle
         )
 
-        val endRadial = ArcHelper.stylizedLine(listOf(sector.outerArcEnd, sector.innerArcEnd))
+        val endRadial = stylizedLine(listOf(sector.outerArcEnd, sector.innerArcEnd))
         val innerArc = if (sector.holeRadius > 0) {
-            ArcHelper.stylizedArc(
+            stylizedArc(
                 sector.position, sector.holeRadius,
                 sector.effectiveEndAngle, sector.startAngle
             )
@@ -119,7 +119,7 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
         val builder = SvgPathDataBuilder()
 
         if (strokeSide.hasOuter) {
-            val outerPoints = ArcHelper.stylizedArc(
+            val outerPoints = stylizedArc(
                 sector.position, sector.radius,
                 sector.startAngle, sector.effectiveEndAngle
             )
@@ -128,7 +128,7 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
         }
 
         if (strokeSide.hasInner && sector.holeRadius > 0) {
-            val innerPoints = ArcHelper.stylizedArc(
+            val innerPoints = stylizedArc(
                 sector.position, sector.holeRadius,
                 sector.startAngle, sector.effectiveEndAngle
             )
@@ -147,14 +147,14 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
             return LinePath(
                 SvgPathDataBuilder().apply {
                     if (atStart) {
-                        val line = ArcHelper.stylizedLine(
+                        val line = stylizedLine(
                             listOf(sector.innerStrokeStartPoint, sector.outerStrokeStartPoint)
                         )
                         moveTo(line.first())
                         line.forEach { lineTo(it) }
                     }
                     if (atEnd) {
-                        val line = ArcHelper.stylizedLine(
+                        val line = stylizedLine(
                             listOf(sector.innerStrokeEndPoint, sector.outerStrokeEndPoint)
                         )
                         moveTo(line.first())
@@ -353,6 +353,40 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
 
     companion object {
         const val HANDLES_GROUPS = false
+
+        private const val ARC_SEGMENT_LENGTH = 5.0
+        private const val ARC_WOBBLE_AMPLITUDE = 0.7
+
+        private fun arcToPoints(
+            center: DoubleVector,
+            radius: Double,
+            startAngle: Double,
+            endAngle: Double
+        ): List<DoubleVector> {
+            if (radius <= 0) return listOf(center)
+
+            val arcLength = radius * abs(endAngle - startAngle)
+            val numSegments = maxOf(2, (arcLength / ARC_SEGMENT_LENGTH).toInt())
+
+            return (0..numSegments).map { i ->
+                val t = i.toDouble() / numSegments
+                val angle = startAngle + (endAngle - startAngle) * t
+                center.add(DoubleVector(radius * cos(angle), radius * sin(angle)))
+            }
+        }
+
+        private fun stylizedArc(
+            center: DoubleVector,
+            radius: Double,
+            startAngle: Double,
+            endAngle: Double
+        ): List<DoubleVector> {
+            return XkcdStyler.stylize(arcToPoints(center, radius, startAngle, endAngle), amplitude = ARC_WOBBLE_AMPLITUDE)
+        }
+
+        private fun stylizedLine(points: List<DoubleVector>): List<DoubleVector> {
+            return XkcdStyler.stylize(points, amplitude = ARC_WOBBLE_AMPLITUDE)
+        }
     }
 
     override fun widthSpan(
