@@ -7,17 +7,16 @@ import kotlin.random.Random
 object XkcdStyler {
     const val DEFAULT_WOBBLE_AMPLITUDE = 2.0
     const val DEFAULT_SEGMENT_LENGTH = 10.0
-    private const val DEFAULT_SEED: Long = 42
 
     fun stylize(
         points: List<DoubleVector>,
         amplitude: Double = DEFAULT_WOBBLE_AMPLITUDE,
         segmentLength: Double = DEFAULT_SEGMENT_LENGTH,
-        seed: Long = DEFAULT_SEED
+        seed: Long? = null
     ): List<DoubleVector> {
         if (points.size < 2) return points
 
-        val random = Random(seed)
+        val random = seed?.let { Random(it) } ?: Random.Default
         val result = mutableListOf<DoubleVector>()
         result.add(points.first())
 
