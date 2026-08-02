@@ -64,7 +64,8 @@ internal class PolarFrameOfReference(
                 breaksData = breaksData,
                 labelAdjustments = labelAdjustments,
                 axisTheme = vAxisTheme,
-                hideAxisBreaks = !layoutInfo.vAxisShown
+                hideAxisBreaks = !layoutInfo.vAxisShown,
+                renderTheme = renderTheme,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -89,7 +90,8 @@ internal class PolarFrameOfReference(
                 breaksData = breaksData,
                 labelAdjustments = labelAdjustments,
                 axisTheme = hAxisTheme,
-                hideAxisBreaks = !layoutInfo.hAxisShown
+                hideAxisBreaks = !layoutInfo.hAxisShown,
+                renderTheme = renderTheme,
             )
 
             val axisOrigin = marginsLayout.toAxisOrigin(
@@ -115,6 +117,7 @@ internal class PolarFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                renderTheme = renderTheme,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)
@@ -134,6 +137,7 @@ internal class PolarFrameOfReference(
                 geomContentBounds = layoutInfo.geomContentBounds,
                 gridTheme = gridTheme,
                 panelTheme = theme.panel(),
+                renderTheme = renderTheme,
             )
             val gridOrigin = layoutInfo.geomContentBounds.origin
             gridComponent.moveTo(gridOrigin)

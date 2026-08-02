@@ -148,6 +148,8 @@ object ThemeOption {
     const val GEOM = "geom"
     const val FLAVOR = "flavor"
 
+    const val RENDER_STYLE = "render_style"
+
 
     // view element
     val ELEMENT_BLANK = mapOf(Elem.BLANK to true)
@@ -210,6 +212,15 @@ object ThemeOption {
         const val HIGH_CONTRAST_LIGHT = "high_contrast_light"
         const val HIGH_CONTRAST_DARK = "high_contrast_dark"
         const val STANDARD= "standard"
+    }
+
+    object RenderStyle {
+        const val XKCD = "xkcd"
+
+        const val NAME = "name"
+        const val AMPLITUDE = "amplitude"
+        const val SEGMENT_LENGTH = "segment_length"
+        const val SEED = "seed"
     }
 
     object Geom {

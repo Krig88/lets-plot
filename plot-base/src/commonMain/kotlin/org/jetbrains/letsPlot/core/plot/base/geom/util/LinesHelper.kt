@@ -9,7 +9,6 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.splitBy
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.*
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.PIXEL_PRECISION
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.intern.util.VectorAdapter
 import org.jetbrains.letsPlot.commons.values.Colors.withOpacity
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier.Companion.DOUGLAS_PEUCKER_PIXEL_THRESHOLD
@@ -19,6 +18,7 @@ import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPathDataFromRectangle
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil.createPaths
+import org.jetbrains.letsPlot.core.plot.base.render.style.PathStylizer
 import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 
@@ -112,10 +112,11 @@ open class LinesHelper(
             .map { splitRings(it.points, PathPoint.LOC_EQ) }
             .mapNotNull { PolygonData.create(it) }
 
+        val stylizer = ctx.renderTheme.paths
         val clientPolygonData = domainPolygonData.mapNotNull { polygon ->
             val rings = polygon.rings
                 .map { if (myResamplingEnabled) resample(it) else toClient(it) }
-                .map(::stylizePathPoints)
+                .let { if (stylizer != null) it.map { ring -> stylizePathPoints(ring, stylizer) } else it }
 
             PolygonData.create(rings)
         }
@@ -173,8 +174,8 @@ open class LinesHelper(
         return smoothed
     }
 
-    private fun stylizePathPoints(points: List<PathPoint>): List<PathPoint> {
-        val styledCoords: List<DoubleVector> = XkcdStyler.stylize(points.map(PathPoint::coord))
+    private fun stylizePathPoints(points: List<PathPoint>, stylizer: PathStylizer): List<PathPoint> {
+        val styledCoords: List<DoubleVector> = stylizer.apply(points.map(PathPoint::coord))
         val pathAes = points.first().aes
         return styledCoords.map { coord: DoubleVector -> PathPoint(pathAes, coord) }
     }
@@ -296,8 +297,10 @@ open class LinesHelper(
             }
         }
 
+        val stylizer = ctx.renderTheme.paths ?: return clientPaths
+
         return clientPaths.mapNotNull { pathData: PathData ->
-            val styledCoords: List<DoubleVector> = XkcdStyler.stylize(pathData.coordinates)
+            val styledCoords: List<DoubleVector> = stylizer.apply(pathData.coordinates)
             val styledPoints = styledCoords.map { coord: DoubleVector -> PathPoint(pathData.aes, coord) }
             PathData.create(styledPoints)
         }

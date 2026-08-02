@@ -20,12 +20,12 @@ import org.jetbrains.letsPlot.core.plot.base.render.point.NamedShape
 import org.jetbrains.letsPlot.core.plot.base.render.point.PointShapeSvg
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgShape
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -169,11 +169,16 @@ class LollipopGeom : GeomBase(), WithWidth, WithHeight {
             }
             val neck = shiftHeadToBase(clientBase, clientHead, candyRadius) // meeting point of candy and stick
 
-            val styledPoints = XkcdStyler.stylize(listOf(clientBase, neck))
-            val line = SvgPathElement().apply {
-                d().set(SvgPathDataBuilder().lineString(styledPoints).build())
+            val stylizer = helper.ctx.renderTheme.paths
+            val line: SvgNode = if (stylizer != null) {
+                val styledPoints = stylizer.apply(listOf(clientBase, neck))
+                SvgPathElement().apply {
+                    d().set(SvgPathDataBuilder().lineString(styledPoints).build())
+                }
+            } else {
+                SvgLineElement(clientBase.x, clientBase.y, neck.x, neck.y)
             }
-            GeomHelper.decorate(line, point, applyAlphaToAll = true, strokeScaler = AesScaling::lineWidth)
+            GeomHelper.decorate(line as SvgShape, point, applyAlphaToAll = true, strokeScaler = AesScaling::lineWidth)
 
             return line
         }
