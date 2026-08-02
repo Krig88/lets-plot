@@ -19,7 +19,8 @@ __all__ = [
     'flavor_solarized_dark',
     'flavor_high_contrast_light',
     'flavor_high_contrast_dark',
-    'flavor_standard'
+    'flavor_standard',
+    'sketch_xkcd',
 ]
 
 
@@ -416,3 +417,49 @@ def flavor_standard():
 
     """
     return FeatureSpec('theme', name=None, flavor="standard")
+
+
+def sketch_xkcd(amplitude=None, segment_length=None, seed=None):
+    """
+    Apply an XKCD-style hand-drawn wobble to lines, axes, grid and shapes.
+
+    Orthogonal to the theme's ``name`` and ``flavor`` — combine with any base theme.
+
+    Parameters
+    ----------
+    amplitude : float, optional
+        Perpendicular wobble amplitude in pixels. Larger = shakier lines. Default: 2.0.
+    segment_length : float, optional
+        Target subdivision segment length in pixels. Smaller = denser wobble. Default: 10.0.
+    seed : int, optional
+        Random seed for deterministic output. If omitted, wobble changes on each render.
+
+    Returns
+    -------
+    ``FeatureSpec``
+        Theme specification.
+
+    Examples
+    --------
+    .. jupyter-execute::
+        :linenos:
+        :emphasize-lines: 6
+
+        import numpy as np
+        from lets_plot import *
+        LetsPlot.setup_html()
+        np.random.seed(42)
+        data = {'x': np.random.normal(size=200)}
+        ggplot(data, aes(x='x')) + geom_histogram() + sketch_xkcd(seed=42)
+
+    """
+    if amplitude is None and segment_length is None and seed is None:
+        return FeatureSpec('theme', name=None, render_style="xkcd")
+    spec = {"name": "xkcd"}
+    if amplitude is not None:
+        spec["amplitude"] = amplitude
+    if segment_length is not None:
+        spec["segment_length"] = segment_length
+    if seed is not None:
+        spec["seed"] = seed
+    return FeatureSpec('theme', name=None, render_style=spec)

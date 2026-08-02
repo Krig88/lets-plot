@@ -12,6 +12,7 @@ import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.interact.UnsupportedInteractionException
 import org.jetbrains.letsPlot.core.plot.base.CoordinateSystem
 import org.jetbrains.letsPlot.core.plot.base.PlotContext
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
 import org.jetbrains.letsPlot.core.plot.base.theme.PanelGridTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
@@ -40,6 +41,8 @@ internal abstract class FrameOfReferenceBase(
     protected val hAxisTheme = theme.horizontalAxis(flipAxis)
     protected val vAxisTheme = theme.verticalAxis(flipAxis)
 
+    protected val renderTheme: RenderTheme = theme.renderTheme()
+
     var isDebugDrawing: Boolean = false
 
     abstract fun doDrawVAxis(parent: SvgComponent)
@@ -67,7 +70,8 @@ internal abstract class FrameOfReferenceBase(
             flipAxis,
             targetCollector,
             backgroundColor = if (theme.panel().showRect()) theme.panel().rectFill() else theme.plot().backgroundFill(),
-            bounds = layoutInfo.geomContentBounds
+            bounds = layoutInfo.geomContentBounds,
+            renderTheme = renderTheme,
         )
     }
 
@@ -167,6 +171,7 @@ internal abstract class FrameOfReferenceBase(
             targetCollector: GeomTargetCollector,
             backgroundColor: Color,
             bounds: DoubleRectangle = DoubleRectangle(DoubleVector.ZERO, DoubleVector.ZERO),
+            renderTheme: RenderTheme = RenderTheme.DEFAULT,
         ): SvgComponent {
             val rendererData = LayerRendererUtil.createLayerRendererData(layer)
 
@@ -212,6 +217,7 @@ internal abstract class FrameOfReferenceBase(
                 .contentBounds(bounds)
                 .scaleFactor(plotContext.getScaleFactor())
                 .messageConsumer(plotContext.getMessageConsumer())
+                .renderTheme(renderTheme)
                 .build()
 
             val pos = rendererData.pos

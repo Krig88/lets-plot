@@ -7,10 +7,9 @@ package org.jetbrains.letsPlot.core.plot.builder.guide
 
 import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
-
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.render.linetype.LineType
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 import org.jetbrains.letsPlot.core.plot.base.render.svg.Label
 import org.jetbrains.letsPlot.core.plot.base.render.svg.StrokeDashArraySupport
 import org.jetbrains.letsPlot.core.plot.base.render.svg.SvgComponent
@@ -24,6 +23,7 @@ import org.jetbrains.letsPlot.core.plot.builder.layout.PlotLabelSpecFactory
 import org.jetbrains.letsPlot.core.plot.builder.presentation.Style
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgColors
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgGElement
+import org.jetbrains.letsPlot.datamodel.svg.dom.SvgLineElement
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgNode
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathDataBuilder
 import org.jetbrains.letsPlot.datamodel.svg.dom.SvgPathElement
@@ -37,7 +37,13 @@ class AxisComponent(
     private val axisTheme: AxisTheme,
     private val hideAxis: Boolean = false,
     private val hideAxisBreaks: Boolean = false,
+    private val renderTheme: RenderTheme = RenderTheme.DEFAULT,
 ) : SvgComponent() {
+
+    private companion object {
+        private const val TICK_MARK_AMPLITUDE_SCALE = 0.3
+        private const val TICK_MARK_SEGMENT_SCALE = 0.2
+    }
 
     override fun buildComponent() {
         if (!hideAxis && !hideAxisBreaks)
@@ -113,13 +119,22 @@ class AxisComponent(
             val y1: Double = if (!orientation.isHorizontal) start else 0.0
             val y2: Double = if (!orientation.isHorizontal) end else 0.0
 
-            val styled = XkcdStyler.stylize(listOf(DoubleVector(x1, y1), DoubleVector(x2, y2)))
-            val axisLine = SvgPathElement().apply {
-                d().set(SvgPathDataBuilder().lineString(styled).build())
-                fill().set(SvgColors.NONE)
-                strokeWidth().set(axisTheme.lineWidth())
-                strokeColor().set(axisTheme.lineColor())
-                StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
+            val stylizer = renderTheme.paths
+            val axisLine: SvgNode = if (stylizer != null) {
+                val styled = stylizer.apply(listOf(DoubleVector(x1, y1), DoubleVector(x2, y2)))
+                SvgPathElement().apply {
+                    d().set(SvgPathDataBuilder().lineString(styled).build())
+                    fill().set(SvgColors.NONE)
+                    strokeWidth().set(axisTheme.lineWidth())
+                    strokeColor().set(axisTheme.lineColor())
+                    StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
+                }
+            } else {
+                SvgLineElement(x1, y1, x2, y2).apply {
+                    strokeWidth().set(axisTheme.lineWidth())
+                    strokeColor().set(axisTheme.lineColor())
+                    StrokeDashArraySupport.apply(this, axisTheme.lineWidth(), axisTheme.lineType())
+                }
             }
             rootElement.children().add(axisLine)
         }
@@ -158,23 +173,38 @@ class AxisComponent(
     }
 
     private fun buildTickMark(style: TickStyle): SvgNode {
-        val end: DoubleVector = when (orientation) {
-            Orientation.LEFT ->   DoubleVector(-style.length, 0.0)
-            Orientation.RIGHT ->  DoubleVector( style.length, 0.0)
-            Orientation.TOP ->    DoubleVector(0.0, -style.length)
-            Orientation.BOTTOM -> DoubleVector(0.0,  style.length)
+        val stylizer = renderTheme.paths
+        if (stylizer != null) {
+            val end: DoubleVector = when (orientation) {
+                Orientation.LEFT ->   DoubleVector(-style.length, 0.0)
+                Orientation.RIGHT ->  DoubleVector( style.length, 0.0)
+                Orientation.TOP ->    DoubleVector(0.0, -style.length)
+                Orientation.BOTTOM -> DoubleVector(0.0,  style.length)
+            }
+            val styled = stylizer.apply(
+                listOf(DoubleVector.ZERO, end),
+                amplitudeScale = TICK_MARK_AMPLITUDE_SCALE,
+                segmentLengthScale = TICK_MARK_SEGMENT_SCALE,
+            )
+            return SvgPathElement().apply {
+                d().set(SvgPathDataBuilder().lineString(styled).build())
+                fill().set(SvgColors.NONE)
+                strokeWidth().set(style.width)
+                strokeColor().set(style.color)
+                StrokeDashArraySupport.apply(this, style.width, style.lineType)
+            }
         }
-        val styled = XkcdStyler.stylize(
-            listOf(DoubleVector.ZERO, end),
-            amplitude = 0.6,
-            segmentLength = 2.0
-        )
-        return SvgPathElement().apply {
-            d().set(SvgPathDataBuilder().lineString(styled).build())
-            fill().set(SvgColors.NONE)
+        return SvgLineElement().apply {
             strokeWidth().set(style.width)
             strokeColor().set(style.color)
             StrokeDashArraySupport.apply(this, style.width, style.lineType)
+
+            when (orientation) {
+                Orientation.LEFT ->   { x2().set(-style.length); y2().set(0.0) }
+                Orientation.RIGHT ->  { x2().set( style.length); y2().set(0.0) }
+                Orientation.TOP ->    { x2().set(0.0); y2().set(-style.length) }
+                Orientation.BOTTOM -> { x2().set(0.0); y2().set( style.length) }
+            }
         }
     }
 
