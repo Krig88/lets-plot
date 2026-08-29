@@ -16,11 +16,11 @@ import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.PieAnnotation
-import org.jetbrains.letsPlot.core.plot.base.geom.util.ArcHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomHelper
 import org.jetbrains.letsPlot.core.plot.base.geom.util.GeomUtil
 import org.jetbrains.letsPlot.core.plot.base.geom.util.HintColorUtil
 import org.jetbrains.letsPlot.core.plot.base.render.LegendKeyElementFactory
+import org.jetbrains.letsPlot.core.plot.base.render.style.PathStylizer
 import org.jetbrains.letsPlot.core.plot.base.render.SvgRoot
 import org.jetbrains.letsPlot.core.plot.base.render.svg.LinePath
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
@@ -62,6 +62,7 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
         ctx: GeomContext
     ) {
         val geomHelper = GeomHelper(pos, coord, ctx)
+        val paths = ctx.renderTheme.paths
         GeomUtil.withDefined(aesthetics.dataPoints(), Aes.X, Aes.Y, Aes.SLICE)
             .groupBy { p -> DoubleVector(p.x()!!, p.y()!!) }
             .forEach { (point, dataPoints) ->
@@ -70,11 +71,11 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
                 val toLocation = { p: DataPointAesthetics -> geomHelper.toClient(point, p) }
                 val pieSectors = computeSectors(dataPoints, toLocation, sizeUnitRatio)
 
-                root.appendNodes(pieSectors.map(::buildSvgSector))
-                root.appendNodes(pieSectors.map(::buildSvgArcs))
+                root.appendNodes(pieSectors.map { buildSvgSector(it, paths) })
+                root.appendNodes(pieSectors.map { buildSvgArcs(it, paths) })
                 if (spacerWidth > 0) {
                     root.appendNodes(
-                        buildSvgSpacerLines(pieSectors, width = spacerWidth, color = spacerColor)
+                        buildSvgSpacerLines(pieSectors, width = spacerWidth, color = spacerColor, paths = paths)
                     )
                 }
 
@@ -84,56 +85,109 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
             }
     }
 
-    private fun buildSvgSector(sector: Sector): LinePath {
-        val startRadial = ArcHelper.stylizedLine(listOf(sector.innerArcStart, sector.outerArcStart))
-
-        val outerArc = ArcHelper.stylizedArc(
-            sector.position, sector.radius,
-            sector.startAngle, sector.effectiveEndAngle
-        )
-
-        val endRadial = ArcHelper.stylizedLine(listOf(sector.outerArcEnd, sector.innerArcEnd))
-        val innerArc = if (sector.holeRadius > 0) {
-            ArcHelper.stylizedArc(
-                sector.position, sector.holeRadius,
-                sector.effectiveEndAngle, sector.startAngle
+    private fun SvgPathDataBuilder.svgOuterArc(sector: Sector) {
+        return with(sector) {
+            ellipticalArc(
+                rx = radius,
+                ry = radius,
+                xAxisRotation = 0.0,
+                largeArc = angle > PI,
+                sweep = true,
+                to = outerArcEnd
             )
-        } else {
-            listOf(sector.position)
-        }
-
-        val contour = mutableListOf<DoubleVector>()
-        contour.addAll(startRadial)
-        contour.addAll(outerArc.drop(1))
-        contour.addAll(endRadial.drop(1))
-        contour.addAll(innerArc.drop(1))
-
-        return LinePath.polygon(contour).apply {
-            val fill = sector.p.fill()!!
-            val fillAlpha = AestheticsUtil.alpha(fill, sector.p)
-            fill().set(Colors.withOpacity(fill, fillAlpha))
         }
     }
 
-    private fun buildSvgArcs(sector: Sector): LinePath {
+    private fun SvgPathDataBuilder.svgInnerArc(sector: Sector) {
+        return with(sector) {
+            ellipticalArc(
+                rx = holeRadius,
+                ry = holeRadius,
+                xAxisRotation = 0.0,
+                largeArc = angle > PI,
+                sweep = false,
+                to = innerArcStart
+            )
+        }
+    }
+
+    private fun buildSvgSector(sector: Sector, paths: PathStylizer?): LinePath {
+        return if (paths != null) {
+            val startRadial = stylizedLine(listOf(sector.innerArcStart, sector.outerArcStart), paths)
+
+            val outerArc = stylizedArc(
+                sector.position, sector.radius,
+                sector.startAngle, sector.effectiveEndAngle, paths,
+            )
+
+            val endRadial = stylizedLine(listOf(sector.outerArcEnd, sector.innerArcEnd), paths)
+            val innerArc = if (sector.holeRadius > 0) {
+                stylizedArc(
+                    sector.position, sector.holeRadius,
+                    sector.effectiveEndAngle, sector.startAngle, paths,
+                )
+            } else {
+                listOf(sector.position)
+            }
+
+            val contour = mutableListOf<DoubleVector>()
+            contour.addAll(startRadial)
+            contour.addAll(outerArc.drop(1))
+            contour.addAll(endRadial.drop(1))
+            contour.addAll(innerArc.drop(1))
+
+            LinePath.polygon(contour).apply {
+                val fill = sector.p.fill()!!
+                val fillAlpha = AestheticsUtil.alpha(fill, sector.p)
+                fill().set(Colors.withOpacity(fill, fillAlpha))
+            }
+        } else {
+            LinePath(
+                SvgPathDataBuilder().apply {
+                    moveTo(sector.innerArcStart)
+                    lineTo(sector.outerArcStart)
+                    svgOuterArc(sector)
+                    lineTo(sector.innerArcEnd)
+                    svgInnerArc(sector)
+                }
+            ).apply {
+                val fill = sector.p.fill()!!
+                val fillAlpha = AestheticsUtil.alpha(fill, sector.p)
+                fill().set(Colors.withOpacity(fill, fillAlpha))
+            }
+        }
+    }
+
+    private fun buildSvgArcs(sector: Sector, paths: PathStylizer?): LinePath {
         val builder = SvgPathDataBuilder()
 
-        if (strokeSide.hasOuter) {
-            val outerPoints = ArcHelper.stylizedArc(
-                sector.position, sector.radius,
-                sector.startAngle, sector.effectiveEndAngle
-            )
-            builder.moveTo(outerPoints.first())
-            outerPoints.forEach { builder.lineTo(it) }
-        }
+        if (paths != null) {
+            if (strokeSide.hasOuter) {
+                val outerPoints = stylizedArc(
+                    sector.position, sector.radius,
+                    sector.startAngle, sector.effectiveEndAngle, paths,
+                )
+                builder.moveTo(outerPoints.first())
+                outerPoints.drop(1).forEach { builder.lineTo(it) }
+            }
 
-        if (strokeSide.hasInner && sector.holeRadius > 0) {
-            val innerPoints = ArcHelper.stylizedArc(
-                sector.position, sector.holeRadius,
-                sector.startAngle, sector.effectiveEndAngle
-            )
-            builder.moveTo(innerPoints.first())
-            innerPoints.forEach { builder.lineTo(it) }
+            if (strokeSide.hasInner && sector.holeRadius > 0) {
+                val innerPoints = stylizedArc(
+                    sector.position, sector.holeRadius,
+                    sector.startAngle, sector.effectiveEndAngle, paths,
+                )
+                builder.moveTo(innerPoints.first())
+                innerPoints.drop(1).forEach { builder.lineTo(it) }
+            }
+        } else {
+            if (strokeSide.hasOuter) {
+                builder.moveTo(sector.outerArcStart)
+                builder.svgOuterArc(sector)
+            }
+            if (strokeSide.hasInner) {
+                builder.moveTo(sector.innerArcEnd)
+                builder.svgInnerArc(sector)
+            }
         }
 
         return LinePath(builder).apply {
@@ -142,23 +196,40 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
         }
     }
 
-    private fun buildSvgSpacerLines(pieSectors: List<Sector>, width: Double, color: Color): List<LinePath> {
+    private fun buildSvgSpacerLines(
+        pieSectors: List<Sector>,
+        width: Double,
+        color: Color,
+        paths: PathStylizer?,
+    ): List<LinePath> {
         fun svgSpacerLines(sector: Sector, atStart: Boolean, atEnd: Boolean): LinePath {
             return LinePath(
                 SvgPathDataBuilder().apply {
                     if (atStart) {
-                        val line = ArcHelper.stylizedLine(
-                            listOf(sector.innerStrokeStartPoint, sector.outerStrokeStartPoint)
-                        )
-                        moveTo(line.first())
-                        line.forEach { lineTo(it) }
+                        if (paths != null) {
+                            val line = stylizedLine(
+                                listOf(sector.innerStrokeStartPoint, sector.outerStrokeStartPoint),
+                                paths,
+                            )
+                            moveTo(line.first())
+                            line.drop(1).forEach { lineTo(it) }
+                        } else {
+                            moveTo(sector.innerStrokeStartPoint)
+                            lineTo(sector.outerStrokeStartPoint)
+                        }
                     }
                     if (atEnd) {
-                        val line = ArcHelper.stylizedLine(
-                            listOf(sector.innerStrokeEndPoint, sector.outerStrokeEndPoint)
-                        )
-                        moveTo(line.first())
-                        line.forEach { lineTo(it) }
+                        if (paths != null) {
+                            val line = stylizedLine(
+                                listOf(sector.innerStrokeEndPoint, sector.outerStrokeEndPoint),
+                                paths,
+                            )
+                            moveTo(line.first())
+                            line.drop(1).forEach { lineTo(it) }
+                        } else {
+                            moveTo(sector.innerStrokeEndPoint)
+                            lineTo(sector.outerStrokeEndPoint)
+                        }
                     }
                 }
             ).apply {
@@ -353,6 +424,44 @@ class PieGeom : GeomBase(), WithWidth, WithHeight {
 
     companion object {
         const val HANDLES_GROUPS = false
+
+        private const val ARC_SEGMENT_LENGTH = 5.0
+        private const val ARC_AMPLITUDE_SCALE = 0.35
+
+        private fun arcToPoints(
+            center: DoubleVector,
+            radius: Double,
+            startAngle: Double,
+            endAngle: Double
+        ): List<DoubleVector> {
+            if (radius <= 0) return listOf(center)
+
+            val arcLength = radius * abs(endAngle - startAngle)
+            val numSegments = maxOf(2, (arcLength / ARC_SEGMENT_LENGTH).toInt())
+
+            return (0..numSegments).map { i ->
+                val t = i.toDouble() / numSegments
+                val angle = startAngle + (endAngle - startAngle) * t
+                center.add(DoubleVector(radius * cos(angle), radius * sin(angle)))
+            }
+        }
+
+        private fun stylizedArc(
+            center: DoubleVector,
+            radius: Double,
+            startAngle: Double,
+            endAngle: Double,
+            paths: PathStylizer,
+        ): List<DoubleVector> {
+            return paths.apply(
+                arcToPoints(center, radius, startAngle, endAngle),
+                amplitudeScale = ARC_AMPLITUDE_SCALE,
+            )
+        }
+
+        private fun stylizedLine(points: List<DoubleVector>, paths: PathStylizer): List<DoubleVector> {
+            return paths.apply(points, amplitudeScale = ARC_AMPLITUDE_SCALE)
+        }
     }
 
     override fun widthSpan(

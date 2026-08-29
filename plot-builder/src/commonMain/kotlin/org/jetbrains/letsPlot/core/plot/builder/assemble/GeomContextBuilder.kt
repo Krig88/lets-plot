@@ -12,6 +12,7 @@ import org.jetbrains.letsPlot.commons.values.Font
 import org.jetbrains.letsPlot.core.commons.data.SeriesUtil
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.geom.annotation.Annotation
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.FontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.tooltip.GeomTargetCollector
 import org.jetbrains.letsPlot.core.plot.base.tooltip.NullGeomTargetCollector
@@ -32,6 +33,7 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
     private var contentBounds: DoubleRectangle? = null
     private var scaleFactor: Double = 1.0
     private var messageConsumer: (String) -> Unit = {}
+    private var renderTheme: RenderTheme = RenderTheme.DEFAULT
 
     constructor()
 
@@ -46,6 +48,7 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
         backgroundColor = ctx.backgroundColor
         plotContext = ctx.plotContext
         coordinateSystem = ctx._coordinateSystem
+        renderTheme = ctx.renderTheme
     }
 
     override fun flipped(flipped: Boolean): ImmutableGeomContext.Builder {
@@ -118,6 +121,11 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
         return this
     }
 
+    override fun renderTheme(renderTheme: RenderTheme): ImmutableGeomContext.Builder {
+        this.renderTheme = renderTheme
+        return this
+    }
+
     override fun build(): ImmutableGeomContext {
         return MyGeomContext(this)
     }
@@ -138,6 +146,7 @@ class GeomContextBuilder : ImmutableGeomContext.Builder {
         override val annotation = b.annotation
         override val backgroundColor = b.backgroundColor
         override val plotContext: PlotContext = b.plotContext
+        override val renderTheme: RenderTheme = b.renderTheme
 
         private val fontFamilyRegistry: FontFamilyRegistry? = b.fontFamilyRegistry
 

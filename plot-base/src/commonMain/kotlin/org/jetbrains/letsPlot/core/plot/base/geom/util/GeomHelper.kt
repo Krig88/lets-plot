@@ -10,12 +10,12 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleSegment
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.commons.intern.util.ArrowSupport
 import org.jetbrains.letsPlot.commons.intern.util.curve
 import org.jetbrains.letsPlot.commons.intern.util.padLineString
 import org.jetbrains.letsPlot.commons.values.Color
 import org.jetbrains.letsPlot.core.plot.base.*
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 import org.jetbrains.letsPlot.core.plot.base.aes.AesScaling
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil
 import org.jetbrains.letsPlot.core.plot.base.aes.AestheticsUtil.ALPHA_CONTROLS_BOTH
@@ -103,11 +103,12 @@ open class GeomHelper(
     }
 
     fun createSvgElementHelper(): SvgElementHelper {
-        return SvgElementHelper(::toClient)
+        return SvgElementHelper(::toClient, ctx.renderTheme)
     }
 
     class SvgElementHelper(
-        private val toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v }
+        private val toClient: (DoubleVector, DataPointAesthetics) -> DoubleVector? = { v, _ -> v },
+        private val renderTheme: RenderTheme = RenderTheme.DEFAULT,
     ) {
         private var myGeometryWithPadding: Boolean = true
         private var myNoSvg: Boolean = false
@@ -159,18 +160,28 @@ open class GeomHelper(
             @Suppress("NAME_SHADOWING")
             val end = toClient(end, p) ?: return null
 
-            val lineString = XkcdStyler.stylize(
-                curve(start, end, curvature, angle, ncp),
-                amplitude = XkcdStyler.DEFAULT_WOBBLE_AMPLITUDE * 1.8,
-                segmentLength = XkcdStyler.DEFAULT_SEGMENT_LENGTH * 0.65
-            )
+            val baseCurve = curve(start, end, curvature, angle, ncp)
+            val stylizer = renderTheme.paths
+            val lineString: List<DoubleVector>
+            val useInterpolation: Boolean
+            if (stylizer != null) {
+                lineString = stylizer.apply(
+                    baseCurve,
+                    amplitudeScale = 1.8,
+                    segmentLengthScale = 0.65,
+                )
+                useInterpolation = false
+            } else {
+                lineString = baseCurve
+                useInterpolation = true
+            }
 
             val svgElement = renderSvgElement(
                 p,
                 lineString,
                 strokeScaler,
                 filled = false,
-                useInterpolation = false
+                useInterpolation = useInterpolation
             ) ?: return null
             val geometry = takeGeometry(lineString, p)
 
@@ -230,7 +241,7 @@ open class GeomHelper(
             } else {
                 points.map { toClient(it, aes) ?: return null }
             }
-            return XkcdStyler.stylize(clientPoints)
+            return renderTheme.paths?.apply(clientPoints) ?: clientPoints
         }
 
         private fun takeGeometry(lineString: List<DoubleVector>, p: DataPointAesthetics): List<DoubleVector> {

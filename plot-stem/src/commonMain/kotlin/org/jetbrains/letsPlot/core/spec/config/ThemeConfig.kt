@@ -5,7 +5,11 @@
 
 package org.jetbrains.letsPlot.core.spec.config
 
+import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.filterNotNullValues
+import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
+import org.jetbrains.letsPlot.core.plot.base.render.style.PathStylizer
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.ExponentFormat
 import org.jetbrains.letsPlot.core.plot.base.theme.FontFamilyRegistry
 import org.jetbrains.letsPlot.core.plot.base.theme.Theme
@@ -47,7 +51,52 @@ class ThemeConfig constructor(
             value = convertTitlePosition(key, value)
             value = convertTagPosition(key, value)
             value = convertTagLocation(key, value)
+            value = convertRenderStyle(key, value)
             return LegendThemeConfig.convertValue(key, value)
+        }
+
+        private fun convertRenderStyle(key: String, value: Any): Any {
+            if (key != ThemeOption.RENDER_STYLE) return value
+
+            fun buildTheme(name: String, opts: Map<*, *>): RenderTheme = when (name) {
+                ThemeOption.RenderStyle.XKCD -> {
+                    val amp = (opts[ThemeOption.RenderStyle.AMPLITUDE] as? Number)?.toDouble()
+                        ?: XkcdStyler.DEFAULT_WOBBLE_AMPLITUDE
+                    val seg = (opts[ThemeOption.RenderStyle.SEGMENT_LENGTH] as? Number)?.toDouble()
+                        ?: XkcdStyler.DEFAULT_SEGMENT_LENGTH
+                    val seed = (opts[ThemeOption.RenderStyle.SEED] as? Number)?.toLong()
+                    val stylizer = object : PathStylizer {
+                        override fun apply(
+                            points: List<DoubleVector>,
+                            amplitudeScale: Double,
+                            segmentLengthScale: Double,
+                        ) = XkcdStyler.stylize(points, amp * amplitudeScale, seg * segmentLengthScale, seed)
+                    }
+                    RenderTheme(paths = stylizer)
+                }
+
+                else -> throw IllegalArgumentException(
+                    "Illegal value: '$name' for ${ThemeOption.RENDER_STYLE}. " +
+                            "Expected: '${ThemeOption.RenderStyle.XKCD}'."
+                )
+            }
+
+            return when (value) {
+                is String -> buildTheme(value, emptyMap<String, Any>())
+                is Map<*, *> -> {
+                    val name = (value[ThemeOption.RenderStyle.NAME] as? String)
+                        ?: throw IllegalArgumentException(
+                            "${ThemeOption.RENDER_STYLE} spec must contain a " +
+                                    "'${ThemeOption.RenderStyle.NAME}' string."
+                        )
+                    buildTheme(name, value)
+                }
+
+                else -> throw IllegalArgumentException(
+                    "Illegal value type for ${ThemeOption.RENDER_STYLE}: '${value::class}'. " +
+                            "Expected a string or a map."
+                )
+            }
         }
 
         private fun convertExponentFormat(key: String, value: Any): Any {

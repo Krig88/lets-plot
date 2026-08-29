@@ -9,7 +9,6 @@ import org.jetbrains.letsPlot.commons.geometry.DoubleRectangle
 import org.jetbrains.letsPlot.commons.geometry.DoubleVector
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler
 import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.AdaptiveResampler.Companion.resample
-import org.jetbrains.letsPlot.commons.intern.typedGeometry.algorithms.XkcdStyler
 import org.jetbrains.letsPlot.core.commons.geometry.PolylineSimplifier
 import org.jetbrains.letsPlot.core.plot.base.*
 import org.jetbrains.letsPlot.core.plot.base.render.svg.lineString
@@ -29,7 +28,6 @@ class RectanglesHelper(
     private val geometryFactory: (DataPointAesthetics) -> DoubleRectangle?
 ) : GeomHelper(pos, coord, ctx) {
     private fun rectangleCorners(rect: DoubleRectangle): List<DoubleVector> {
-        // Closed polyline for a rectangle; reused across branches to avoid duplicating point order logic.
         return listOf(
             DoubleVector(rect.left, rect.top),
             DoubleVector(rect.right, rect.top),
@@ -39,10 +37,6 @@ class RectanglesHelper(
         )
     }
 
-    private fun stylize(points: List<DoubleVector>): List<DoubleVector> {
-        return XkcdStyler.stylize(points)
-    }
-
     private fun createRectPath(points: List<DoubleVector>): SvgPathElement {
         return SvgPathElement().apply {
             d().set(SvgPathDataBuilder().lineString(points).build())
@@ -50,20 +44,24 @@ class RectanglesHelper(
     }
 
     private fun createRectangleSvgNode(rect: DoubleRectangle): SvgNode {
-        // Use a stylized polyline path, because SvgRectElement cannot express hand-drawn edges
-        return createRectPath(stylize(rectangleCorners(rect)))
+        val stylizer = ctx.renderTheme.paths
+        return if (stylizer != null) {
+            createRectPath(stylizer.apply(rectangleCorners(rect)))
+        } else {
+            SvgRectElement(rect)
+        }
     }
 
     // TODO: Replace with SvgRectHelper
     fun createNonLinearRectangles(handler: (DataPointAesthetics, SvgNode, List<DoubleVector>) -> Unit) {
+        val stylizer = ctx.renderTheme.paths
         myAesthetics.dataPoints().forEach { p ->
             geometryFactory(p)?.let { rect ->
-                val polyRect = stylize(
-                    resample(
-                        precision = AdaptiveResampler.PIXEL_PRECISION,
-                        points = rectangleCorners(rect)
-                    ) { toClient(it, p) }
-                )
+                val polyRect = resample(
+                    precision = AdaptiveResampler.PIXEL_PRECISION,
+                    points = rectangleCorners(rect)
+                ) { toClient(it, p) }
+                    .let { stylizer?.apply(it) ?: it }
 
                 val svgPoly = createRectPath(polyRect)
 
@@ -123,37 +121,69 @@ class RectanglesHelper(
         fun createSlimRectangles(): SvgSlimGroup {
             val pointCount = myAesthetics.dataPointCount()
             val group = SvgSlimElements.g(pointCount)
+            val stylizer = ctx.renderTheme.paths
 
             for (index in 0 until pointCount) {
                 val p = myAesthetics.dataPointAt(index)
                 val rect = geometryFactory(p) ?: continue
 
-                val polyRect = if (myResamplingEnabled) {
-                    resample(
-                        precision = myResamplingPrecision,
-                        points = rectangleCorners(rect)
-                    ) { toClient(it, p) }
-                } else {
-                    val clientRect = toClient(rect, p) ?: continue
-                    rectangleCorners(clientRect)
-                }
-
-                val styledPolyRect = stylize(polyRect)
-
-                // Resampling of a tiny rectangle still can produce a very small polygon - simplify it.
-                val simplified = PolylineSimplifier.douglasPeucker(styledPolyRect).setWeightLimit(PolylineSimplifier.DOUGLAS_PEUCKER_PIXEL_THRESHOLD).points.let {
-                    if (it.size != 1) {
-                        println("RectanglesHelper: expected a single path, but got ${it.size}")
+                if (stylizer != null) {
+                    val polyRect = if (myResamplingEnabled) {
+                        resample(
+                            precision = myResamplingPrecision,
+                            points = rectangleCorners(rect)
+                        ) { toClient(it, p) }
+                    } else {
+                        val clientRect = toClient(rect, p) ?: continue
+                        rectangleCorners(clientRect)
                     }
 
-                    it.firstOrNull() ?: emptyList()
+                    val styledPolyRect = stylizer.apply(polyRect)
+
+                    // Resampling of a tiny rectangle still can produce a very small polygon - simplify it.
+                    val simplified = PolylineSimplifier.douglasPeucker(styledPolyRect).setWeightLimit(PolylineSimplifier.DOUGLAS_PEUCKER_PIXEL_THRESHOLD).points.let {
+                        if (it.size != 1) {
+                            println("RectanglesHelper: expected a single path, but got ${it.size}")
+                        }
+
+                        it.firstOrNull() ?: emptyList()
+                    }
+
+                    onGeometry(p, null, simplified)
+
+                    val slimShape = SvgSlimElements.path(SvgPathDataBuilder().lineString(simplified).build())
+                    decorateSlimShape(slimShape, p)
+                    slimShape.appendTo(group)
+                } else {
+                    if (myResamplingEnabled) {
+                        val polyRect = resample(
+                            precision = myResamplingPrecision,
+                            points = rectangleCorners(rect)
+                        ) { toClient(it, p) }
+
+                        val simplified = PolylineSimplifier.douglasPeucker(polyRect).setWeightLimit(PolylineSimplifier.DOUGLAS_PEUCKER_PIXEL_THRESHOLD).points.let {
+                            if (it.size != 1) {
+                                println("RectanglesHelper: expected a single path, but got ${it.size}")
+                            }
+
+                            it.firstOrNull() ?: emptyList()
+                        }
+
+                        onGeometry(p, null, simplified)
+
+                        val slimShape = SvgSlimElements.path(SvgPathDataBuilder().lineString(simplified).build())
+                        decorateSlimShape(slimShape, p)
+                        slimShape.appendTo(group)
+                    } else {
+                        val clientRect = toClient(rect, p) ?: continue
+
+                        onGeometry(p, clientRect, null)
+
+                        val slimShape = SvgSlimElements.rect(clientRect.left, clientRect.top, clientRect.width, clientRect.height)
+                        decorateSlimShape(slimShape, p)
+                        slimShape.appendTo(group)
+                    }
                 }
-
-                onGeometry(p, null, simplified)
-
-                val slimShape = SvgSlimElements.path(SvgPathDataBuilder().lineString(simplified).build())
-                decorateSlimShape(slimShape, p)
-                slimShape.appendTo(group)
             }
             return group
         }

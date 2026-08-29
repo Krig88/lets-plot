@@ -101,7 +101,9 @@ def theme(*,
 
           label_text=None,
 
-          geom=None
+          geom=None,
+
+          render_style=None
           ):
     """
     Use ``theme()`` to modify individual components of a theme,
@@ -416,6 +418,12 @@ def theme(*,
     geom : dict
         Color settings for geometries.
         Set `element_geom() <https://lets-plot.org/python/pages/api/lets_plot.element_geom.html>`__ to specify new values for the named colors.
+    render_style : str or dict
+        Rendering style preset applied on top of the theme (orthogonal to ``name`` and ``flavor``).
+        Currently supported: ``'xkcd'`` — hand-drawn-style wobble applied to lines, axes, grid and shapes.
+        Pass a string for defaults (``render_style='xkcd'``) or a dict to tune parameters:
+        ``{'name': 'xkcd', 'amplitude': 2.5, 'segment_length': 8.0, 'seed': 42}``.
+        See also `sketch_xkcd() <https://lets-plot.org/python/pages/api/lets_plot.sketch_xkcd.html>`__.
 
     Returns
     -------

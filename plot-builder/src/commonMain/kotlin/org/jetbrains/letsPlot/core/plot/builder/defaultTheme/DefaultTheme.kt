@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.core.plot.builder.defaultTheme
 
 import org.jetbrains.letsPlot.core.plot.base.GeomKind
 import org.jetbrains.letsPlot.core.plot.base.aes.GeomTheme
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 import org.jetbrains.letsPlot.core.plot.base.theme.*
 import org.jetbrains.letsPlot.core.plot.base.theme.ExponentFormat.Companion.DEF_EXPONENT_FORMAT
 import org.jetbrains.letsPlot.core.plot.builder.defaultTheme.values.ThemeOption
@@ -60,6 +61,12 @@ class DefaultTheme internal constructor(
     }
 
     override fun colors(): ColorTheme = colors
+
+    private val renderTheme: RenderTheme by lazy {
+        options[ThemeOption.RENDER_STYLE] as? RenderTheme ?: RenderTheme.DEFAULT
+    }
+
+    override fun renderTheme(): RenderTheme = renderTheme
 
     companion object {
         // For demo and tests

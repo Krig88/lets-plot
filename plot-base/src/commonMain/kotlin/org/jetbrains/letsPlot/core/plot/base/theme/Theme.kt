@@ -7,6 +7,7 @@ package org.jetbrains.letsPlot.core.plot.base.theme
 
 import org.jetbrains.letsPlot.core.plot.base.GeomKind
 import org.jetbrains.letsPlot.core.plot.base.aes.GeomTheme
+import org.jetbrains.letsPlot.core.plot.base.render.style.RenderTheme
 
 interface Theme {
     val fontFamilyRegistry: FontFamilyRegistry
@@ -32,4 +33,6 @@ interface Theme {
     fun geometries(geomKind: GeomKind): GeomTheme
 
     fun colors(): ColorTheme
+
+    fun renderTheme(): RenderTheme = RenderTheme.DEFAULT
 }
